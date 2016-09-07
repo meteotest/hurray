@@ -90,3 +90,12 @@ ENV/
 
 # vim swap files
 .*.sw*
+
+# User-specific stuff:
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+
+.idea/
