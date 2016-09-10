@@ -34,7 +34,7 @@ import logging
 import logging.handlers
 import sys
 
-from hurray.util import unicode_type, basestring_type
+from hurray.server.util import unicode_type, basestring_type
 
 try:
     import curses  # type: ignore
@@ -57,6 +57,7 @@ def _stderr_supports_color():
         except Exception:
             pass
     return color
+
 
 _TO_UNICODE_TYPES = (unicode_type, type(None))
 
@@ -220,7 +221,7 @@ def enable_pretty_logging(options=None, logger=None):
                 interval=options.log_rotate_interval,
                 backupCount=options.log_file_num_backups)
         else:
-            error_message = 'The value of log_rotate_mode option should be ' +\
+            error_message = 'The value of log_rotate_mode option should be ' + \
                             '"size" or "time", not "%s".' % rotate_mode
             raise ValueError(error_message)
         channel.setFormatter(LogFormatter(color=False))
@@ -275,11 +276,3 @@ def define_logging_options(options=None):
                    help="The mode of rotating files(time or size)")
 
     options.add_parse_callback(lambda: enable_pretty_logging(options))
-
-
-def enable_quick_pretty_logging():
-    logger = logging.getLogger()
-    logger.setLevel(getattr(logging, 'INFO'))
-    channel = logging.StreamHandler()
-    channel.setFormatter(LogFormatter())
-    logger.addHandler(channel)

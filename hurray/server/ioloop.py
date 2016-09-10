@@ -36,18 +36,19 @@ import itertools
 import logging
 import numbers
 import os
-import select
 import sys
 import threading
 import time
 import traceback
-import math
 
-from hurray.concurrent import TracebackFuture, is_future
-from hurray.log import app_log, gen_log
-from hurray.platform.auto import set_close_exec, Waker
-from hurray import stack_context
-from hurray.util import PY3, Configurable, errno_from_exception, timedelta_to_seconds
+import math
+import select
+
+from hurray.server import stack_context
+from hurray.server.concurrent import TracebackFuture, is_future
+from hurray.server.log import app_log, gen_log
+from hurray.server.platform.auto import set_close_exec, Waker
+from hurray.server.util import PY3, Configurable, errno_from_exception, timedelta_to_seconds
 
 try:
     import signal
@@ -239,9 +240,9 @@ class IOLoop(Configurable):
     @classmethod
     def configurable_default(cls):
         if hasattr(select, "epoll"):
-            from hurray.platform.epoll import EPollIOLoop
+            from hurray.server.platform.epoll import EPollIOLoop
             return EPollIOLoop
-        from hurray.platform.select import SelectIOLoop
+        from hurray.server.platform.select import SelectIOLoop
         return SelectIOLoop
 
     def initialize(self, make_current=None):
@@ -430,7 +431,7 @@ class IOLoop(Configurable):
             try:
                 result = func()
                 if result is not None:
-                    from hurray.gen import convert_yielded
+                    from hurray.server.gen import convert_yielded
                     result = convert_yielded(result)
             except Exception:
                 future_cell[0] = TracebackFuture()
@@ -599,7 +600,7 @@ class IOLoop(Configurable):
         try:
             ret = callback()
             if ret is not None:
-                from hurray import gen
+                from hurray.server import gen
                 # Functions that return Futures typically swallow all
                 # exceptions and store them in the Future.  If a Future
                 # makes it out to the IOLoop, ensure its exception (if any)

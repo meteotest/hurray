@@ -30,19 +30,19 @@ import collections
 import errno
 import numbers
 import os
+import re
 import socket
 import sys
-import re
 
-from hurray.concurrent import TracebackFuture
-from hurray import ioloop
-from hurray.log import gen_log, app_log
-from hurray.netutil import ssl_wrap_socket, ssl_match_hostname, SSLCertificateError, _client_ssl_defaults, _server_ssl_defaults
-from hurray import stack_context
-from hurray.util import errno_from_exception
+from hurray.server import ioloop
+from hurray.server import stack_context
+from hurray.server.concurrent import TracebackFuture
+from hurray.server.log import gen_log, app_log
+from hurray.server.netutil import ssl_wrap_socket, ssl_match_hostname, SSLCertificateError, _client_ssl_defaults, _server_ssl_defaults
+from hurray.server.util import errno_from_exception
 
 try:
-    from hurray.platform.posix import _set_nonblocking
+    from hurray.server.platform.posix import _set_nonblocking
 except ImportError:
     _set_nonblocking = None
 

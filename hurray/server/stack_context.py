@@ -72,7 +72,7 @@ from __future__ import absolute_import, division, print_function, with_statement
 import sys
 import threading
 
-from hurray.util import raise_exc_info
+from hurray.server.util import raise_exc_info
 
 
 class StackContextInconsistentError(Exception):

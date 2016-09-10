@@ -24,9 +24,9 @@ import sys
 import socket
 import stat
 
-from hurray.ioloop import IOLoop
-from hurray.platform.auto import set_close_exec
-from hurray.util import PY3, errno_from_exception
+from hurray.server.ioloop import IOLoop
+from hurray.server.platform.auto import set_close_exec
+from hurray.server.util import PY3, errno_from_exception
 
 try:
     import ssl

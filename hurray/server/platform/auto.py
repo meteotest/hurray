@@ -25,7 +25,7 @@ Most code that needs access to this functionality should do e.g.::
 
 from __future__ import absolute_import, division, print_function, with_statement
 
-from hurray.platform.posix import set_close_exec, Waker
+from hurray.server.platform.posix import set_close_exec, Waker
 
 try:
     # monotime monkey-patches the time module to have a monotonic function

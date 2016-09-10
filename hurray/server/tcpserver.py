@@ -21,12 +21,12 @@ import errno
 import os
 import socket
 
-from hurray.log import app_log
-from hurray.ioloop import IOLoop
-from hurray.iostream import IOStream, SSLIOStream
-from hurray.netutil import bind_sockets, add_accept_handler, ssl_wrap_socket
-from hurray import process
-from hurray.util import errno_from_exception
+from hurray.server.log import app_log
+from hurray.server.ioloop import IOLoop
+from hurray.server.iostream import IOStream, SSLIOStream
+from hurray.server.netutil import bind_sockets, add_accept_handler, ssl_wrap_socket
+from hurray.server import process
+from hurray.server.util import errno_from_exception
 
 try:
     import ssl

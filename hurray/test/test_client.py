@@ -8,7 +8,6 @@ from tornado.tcpclient import TCPClient
 from tornado import gen, ioloop, queues
 from tornado.options import options, define
 
-base_url = 'http://www.tornadoweb.org/en/stable/'
 concurrency = 10
 
 define("host", default="localhost", help="TCP server host")

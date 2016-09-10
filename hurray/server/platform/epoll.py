@@ -18,7 +18,7 @@ from __future__ import absolute_import, division, print_function, with_statement
 
 import select
 
-from hurray.ioloop import PollIOLoop
+from hurray.server.ioloop import PollIOLoop
 
 
 class EPollIOLoop(PollIOLoop):

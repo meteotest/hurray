@@ -58,20 +58,21 @@ setup(
         # data files need to be listed both here (which determines what gets
         # installed) and in MANIFEST.in (which determines what gets included
         # in the sdist tarball)
-        "huuray.test": [],
+        "hurray.test": [],
     },
-    author="Meteotest",
-    author_email="aeby@substyle.ch",
     url="https://github.com/meteotest/hurray/",
-    license="http://www.apache.org/licenses/LICENSE-2.0",
+    author='Meteotest',
+    author_email='remo.goetschi@meteotest.ch',
+    maintainer='Reto Aebersold',
+    maintainer_email='aeby@substyle.ch',
+    license='MIT',
     description="Hurray is a Python server exposing an API to access hdf5 files",
     classifiers=[
-        'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4'
+        'Development Status :: 3 - Alpha',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: POSIX',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3.5'
     ],
     **kwargs
 )
