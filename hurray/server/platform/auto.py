@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2011 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -16,11 +17,11 @@
 
 """Implementation of platform-specific functionality.
 
-For each function or class described in `tornado.platform.interface`,
+For each function or class described in `hurray.server.platform.interface`,
 the appropriate platform-specific implementation exists in this module.
 Most code that needs access to this functionality should do e.g.::
 
-    from tornado.platform.auto import set_close_exec
+    from hurray.server.platform.auto import set_close_exec
 """
 
 from __future__ import absolute_import, division, print_function, with_statement
