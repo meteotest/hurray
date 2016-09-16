@@ -145,7 +145,7 @@ class RequestHandlerTestCase(unittest.TestCase):
         response = up(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_DATA)
 
-        cmd[CMD_KW_DATA] = np.random.randint(0, 255, dtype='u1', size=(5, 10))
+        cmd[CMD_KW_DATA] = np.random.randint(0, 255, size=(5, 10)).astype('uint8')
 
         response = up(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
@@ -157,7 +157,7 @@ class RequestHandlerTestCase(unittest.TestCase):
         db_name = 'test.h5'
         ds_name = 'testds'
         grp_name = 'testgrp'
-        data = np.random.randint(0, 255, dtype='u1', size=(5, 10))
+        data = np.random.randint(0, 255, size=(5, 10)).astype('uint8')
 
         self.create_db(db_name)
         self.create_grp(db_name, grp_name)
@@ -199,7 +199,7 @@ class RequestHandlerTestCase(unittest.TestCase):
     def test_slice(self):
         db_name = 'test.h5'
         ds_name = 'testds'
-        data = np.random.randint(0, 255, dtype='u1', size=(5, 10))
+        data = np.random.randint(0, 255, size=(5, 10)).astype('uint8')
 
         self.create_db(db_name)
         self.create_ds(db_name, ds_name, data)

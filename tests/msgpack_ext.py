@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal
 
 class MsgPackTestCase(unittest.TestCase):
     def test_ndarray(self):
-        data_in = np.random.randint(0, 255, dtype='u1', size=(5, 10))
+        data_in = np.random.randint(0, 255, size=(5, 10)).astype('uint8')
 
         packed_nparray = msgpack.packb(data_in, default=encode_np_array, use_bin_type=True)
         unpacked_nparray = msgpack.unpackb(packed_nparray, object_hook=decode_np_array, encoding='utf-8')
