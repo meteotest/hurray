@@ -30,42 +30,16 @@ import os
 import msgpack
 from h5pyswmr import File, Group, Dataset
 from hurray.msgpack_ext import encode_np_array
+from hurray.protocol import CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE, CMD_CREATE_GROUP, CMD_CREATE_DATASET, \
+    CMD_GET_NODE, CMD_SLICE_DATASET, CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET, \
+    CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS, CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB, CMD_KW_PATH, CMD_KW_DATA, \
+    RESPONSE_NODE_TYPE, NODE_TYPE_GROUP, NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE, RESPONSE_NODE_DTYPE, CMD_KW_KEY, \
+    RESPONSE_DATA, CMD_KW_STATUS, RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS
 from hurray.server.log import app_log
 from hurray.server.options import define, options
 from hurray.status_codes import FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS, \
     NODE_NOT_FOUND, DATASET_EXISTS, VALUE_ERROR, TYPE_ERROR, CREATED, UNKNOWN_COMMAND, MISSING_ARGUMENT, MISSING_DATA, \
-    KEY_ERROR
-
-MSG_LEN = 4
-PROTOCOL_VER = 1
-
-CMD_KW_CMD = 'cmd'
-CMD_KW_ARGS = 'args'
-CMD_KW_DATA = 'data'
-CMD_KW_PATH = 'path'
-CMD_KW_KEY = 'key'
-CMD_KW_DB = 'db'
-CMD_KW_STATUS = 'status'
-
-CMD_CREATE_DATABASE = 'create_db'
-CMD_CONNECT_DATABASE = 'connect_db'
-CMD_CREATE_GROUP = 'create_group'
-CMD_CREATE_DATASET = 'create_dataset'
-CMD_GET_NODE = 'get_node'
-CMD_SLICE_DATASET = 'slice_dataset'
-CMD_BROADCAST_DATASET = 'broadcast_dataset'
-
-CMD_ATTRIBUTES_GET = 'attrs_getitem'
-CMD_ATTRIBUTES_SET = 'attrs_setitem'
-CMD_ATTRIBUTES_CONTAINS = 'attrs_contains'
-CMD_ATTRIBUTES_KEYS = 'attrs_keys'
-
-RESPONSE_NODE_TYPE = 'nodetype'
-RESPONSE_NODE_SHAPE = 'shape'
-RESPONSE_NODE_DTYPE = 'dtype'
-RESPONSE_ATTRS_CONTAINS = 'contains'
-RESPONSE_ATTRS_KEYS = 'keys'
-RESPONSE_DATA = 'data'
+    KEY_ERROR, INVALID_ARGUMENT
 
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
@@ -82,19 +56,7 @@ NODE_COMMANDS = (CMD_CREATE_GROUP,
                  CMD_ATTRIBUTES_CONTAINS,
                  CMD_ATTRIBUTES_KEYS)
 
-NODE_TYPE_GROUP = 'group'
-NODE_TYPE_DATASET = 'dataset'
-
 define('base', default='.', group='application', help="Database files location")
-
-
-def decode(value):
-    """
-    Return a string UTF-8 decoded from the given bytes.
-    :param value: by
-    :return: String
-    """
-    return value.decode(encoding='UTF-8') if value and isinstance(value, (bytes, bytearray)) else value
 
 
 def db_path(database):
@@ -103,7 +65,7 @@ def db_path(database):
     :param database: Name of database file
     :return: Absolute path
     """
-    return os.path.abspath(os.path.join(options.base, decode(database)))
+    return os.path.abspath(os.path.join(options.base, database or ''))
 
 
 def db_exists(database):
@@ -135,8 +97,8 @@ def handle_request(msg):
     cmd = msg.get(CMD_KW_CMD, None)
     args = msg.get(CMD_KW_ARGS, {})
 
-    app_log.debug('Process "%s" (%s)', decode(cmd),
-                  ', '.join(['%s=%s' % (decode(k), decode(v)) for k, v in args.items()]))
+    app_log.debug('Process "%s" (%s)', cmd,
+                  ', '.join(['%s=%s' % (k, v) for k, v in args.items()]))
 
     status = OK
     data = None
@@ -146,6 +108,8 @@ def handle_request(msg):
         if CMD_KW_DB not in args:
             return response(MISSING_ARGUMENT)
         db = args[CMD_KW_DB]
+        if len(db) < 1:
+            return response(INVALID_ARGUMENT)
         if cmd == CMD_CREATE_DATABASE:
             if db_exists(db):
                 status = FILE_EXISTS
@@ -167,7 +131,7 @@ def handle_request(msg):
             return response(FILE_NOT_FOUND)
 
         db = File(db_path(db_name), "r+")
-        path = decode(args[CMD_KW_PATH])
+        path = args[CMD_KW_PATH]
 
         if cmd == CMD_CREATE_GROUP:
             if path in db:
@@ -227,7 +191,7 @@ def handle_request(msg):
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
                 if CMD_KW_DATA in msg:
-                    db[path].attrs[decode(args[CMD_KW_KEY])] = msg[CMD_KW_DATA]
+                    db[path].attrs[args[CMD_KW_KEY]] = msg[CMD_KW_DATA]
                 else:
                     return response(MISSING_DATA)
             elif cmd == CMD_ATTRIBUTES_GET:
@@ -235,7 +199,7 @@ def handle_request(msg):
                     return response(MISSING_ARGUMENT)
                 try:
                     data = {
-                        RESPONSE_DATA: db[path].attrs[decode(args[CMD_KW_KEY])]
+                        RESPONSE_DATA: db[path].attrs[args[CMD_KW_KEY]]
                     }
                 except KeyError as ke:
                     status = KEY_ERROR

@@ -68,7 +68,7 @@ class HurrayServer(TCPServer):
                 app_log.debug("Handle request (Protocol: v%d, Msg size: %d)", protocol_ver, msg_length)
 
                 data = yield stream.read_bytes(msg_length)
-                msg = msgpack.unpackb(data, object_hook=decode_np_array, use_list=False)
+                msg = msgpack.unpackb(data, object_hook=decode_np_array, use_list=False, encoding='utf-8')
 
                 try:
                     fut = pool.submit(handle_request, msg)
