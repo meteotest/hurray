@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2012 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -13,19 +14,19 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-"""Logging support for Tornado.
+"""Logging support for Hurray.
 
-Tornado uses three logger streams:
+Hurray uses three logger streams:
 
-* ``tornado.access``: Per-request logging for Tornado's HTTP servers (and
+* ``hurray.access``: Per-request logging for Tornado's HTTP servers (and
   potentially other servers in the future)
-* ``tornado.application``: Logging of errors from application code (i.e.
+* ``hurray.application``: Logging of errors from application code (i.e.
   uncaught exceptions from callbacks)
-* ``tornado.general``: General-purpose logging, including any errors
+* ``hurray.general``: General-purpose logging, including any errors
   or warnings from Tornado itself.
 
 These streams may be configured independently using the standard library's
-`logging` module.  For example, you may wish to send ``tornado.access`` logs
+`logging` module.  For example, you may wish to send ``hurray.access`` logs
 to a separate file for analysis.
 """
 from __future__ import absolute_import, division, print_function, with_statement
@@ -41,7 +42,7 @@ try:
 except ImportError:
     curses = None
 
-# Logger objects for internal tornado use
+# Logger objects for internal hurray use
 access_log = logging.getLogger("hurray.access")
 app_log = logging.getLogger("hurray.application")
 gen_log = logging.getLogger("hurray.general")
@@ -94,7 +95,7 @@ class LogFormatter(logging.Formatter):
     * Robust against str/bytes encoding problems.
 
     This formatter is enabled automatically by
-    `tornado.options.parse_command_line` or `tornado.options.parse_config_file`
+    `hurray.server.options.parse_command_line` or `hurray.server.options.parse_config_file`
     (unless ``--logging=none`` is used).
     """
     DEFAULT_FORMAT = '%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s'
@@ -196,8 +197,8 @@ class LogFormatter(logging.Formatter):
 def enable_pretty_logging(options=None, logger=None):
     """Turns on formatted logging output as configured.
 
-    This is called automatically by `tornado.options.parse_command_line`
-    and `tornado.options.parse_config_file`.
+    This is called automatically by `hurray.server.options.parse_command_line`
+    and `hurray.server.options.parse_config_file`.
     """
     if options is None:
         import hurray.options

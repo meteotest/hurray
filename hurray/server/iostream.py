@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2009 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -959,8 +960,8 @@ class IOStream(BaseIOStream):
 
     .. testcode::
 
-        import tornado.ioloop
-        import tornado.iostream
+        import hurray.server.ioloop
+        import hurray.server.iostream
         import socket
 
         def send_request():
@@ -978,13 +979,13 @@ class IOStream(BaseIOStream):
         def on_body(data):
             print(data)
             stream.close()
-            tornado.ioloop.IOLoop.current().stop()
+            hurray.server.ioloop.IOLoop.current().stop()
 
         if __name__ == '__main__':
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-            stream = tornado.iostream.IOStream(s)
+            stream = hurray.server.iostream.IOStream(s)
             stream.connect(("friendfeed.com", 80), send_request)
-            tornado.ioloop.IOLoop.current().start()
+            hurray.server.ioloop.IOLoop.current().start()
 
     .. testoutput::
        :hide:

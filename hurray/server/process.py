@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2011 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -108,8 +109,7 @@ def fork_processes(num_processes, max_restarts=100):
     between any server code.
 
     Note that multiple processes are not compatible with the autoreload
-    module (or the ``autoreload=True`` option to `tornado.web.Application`
-    which defaults to True when ``debug=True``).
+    module.
     When using multiple processes, no IOLoops can be created or
     referenced until after the call to ``fork_processes``.
 
@@ -197,7 +197,7 @@ class Subprocess(object):
     additions:
 
     * ``stdin``, ``stdout``, and ``stderr`` may have the value
-      ``tornado.process.Subprocess.STREAM``, which will make the corresponding
+      ``hurray.server.process.Subprocess.STREAM``, which will make the corresponding
       attribute of the resulting Subprocess a `.PipeIOStream`.
     * A new keyword argument ``io_loop`` may be used to pass in an IOLoop.
 

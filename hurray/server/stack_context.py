@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2010 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -18,7 +19,7 @@
 that follows execution as it moves to other execution contexts.
 
 The motivating examples are to eliminate the need for explicit
-``async_callback`` wrappers (as in `tornado.web.RequestHandler`), and to
+``async_callback`` wrappers, and to
 allow some additional context to be kept for logging.
 
 This is slightly magic, but it's an extension of the idea that an
@@ -51,7 +52,7 @@ Most applications shouldn't have to work with `StackContext` directly.
 Here are a few rules of thumb for when it's necessary:
 
 * If you're writing an asynchronous library that doesn't rely on a
-  stack_context-aware library like `tornado.ioloop` or `tornado.iostream`
+  stack_context-aware library like `hurray.server.ioloop` or `hurray.server.iostream`
   (for example, if you're writing a thread pool), use
   `.stack_context.wrap()` before any asynchronous operations to capture the
   stack context from where the operation was started.

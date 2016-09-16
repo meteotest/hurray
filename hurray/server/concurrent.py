@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2012 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -138,7 +139,7 @@ class Future(object):
     Tornado they are normally used with `.IOLoop.add_future` or by
     yielding them in a `.gen.coroutine`.
 
-    `tornado.concurrent.Future` is similar to
+    `hurray.concurrent.Future` is similar to
     `concurrent.futures.Future`, but not thread-safe (and therefore
     faster for use with single-threaded event loops).
 
@@ -150,7 +151,7 @@ class Future(object):
     ``TracebackFuture``, which is now a deprecated alias for this class.
 
     .. versionchanged:: 4.0
-       `tornado.concurrent.Future` is always a thread-unsafe ``Future``
+       `hurray.concurrent.Future` is always a thread-unsafe ``Future``
        with support for the ``exc_info`` methods.  Previously it would
        be an alias for the thread-safe `concurrent.futures.Future`
        if that package was available and fall back to the thread-unsafe

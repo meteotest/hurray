@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2009 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -84,7 +85,7 @@ class IOLoop(Configurable):
 
         import errno
         import functools
-        import tornado.ioloop
+        import hurray.server.ioloop
         import socket
 
         def connection_ready(sock, fd, events):
@@ -105,7 +106,7 @@ class IOLoop(Configurable):
             sock.bind(("", port))
             sock.listen(128)
 
-            io_loop = tornado.ioloop.IOLoop.current()
+            io_loop = hurray.server.ioloop.IOLoop.current()
             callback = functools.partial(connection_ready, sock)
             io_loop.add_handler(sock.fileno(), callback, io_loop.READ)
             io_loop.start()
@@ -176,7 +177,7 @@ class IOLoop(Configurable):
 
         When using an `IOLoop` subclass, `install` must be called prior
         to creating any objects that implicitly create their own
-        `IOLoop` (e.g., :class:`tornado.httpclient.AsyncHTTPClient`).
+        `IOLoop`.
         """
         assert not IOLoop.initialized()
         IOLoop._instance = self
@@ -242,6 +243,10 @@ class IOLoop(Configurable):
         if hasattr(select, "epoll"):
             from hurray.server.platform.epoll import EPollIOLoop
             return EPollIOLoop
+        if hasattr(select, "kqueue"):
+            # Python 2.6+ on BSD or Mac
+            from hurray.server.platform.kqueue import KQueueIOLoop
+            return KQueueIOLoop
         from hurray.server.platform.select import SelectIOLoop
         return SelectIOLoop
 
@@ -412,7 +417,7 @@ class IOLoop(Configurable):
         a maximum duration for the function.  If the timeout expires,
         a `TimeoutError` is raised.
 
-        This method is useful in conjunction with `tornado.gen.coroutine`
+        This method is useful in conjunction with `hurray.server.gen.coroutine`
         to allow asynchronous calls in a ``main()`` function::
 
             @gen.coroutine
@@ -674,9 +679,9 @@ class IOLoop(Configurable):
 class PollIOLoop(IOLoop):
     """Base class for IOLoops built around a select-like function.
 
-    For concrete implementations, see `tornado.platform.epoll.EPollIOLoop`
-    (Linux), `tornado.platform.kqueue.KQueueIOLoop` (BSD and Mac), or
-    `tornado.platform.select.SelectIOLoop` (all platforms).
+    For concrete implementations, see `hurray.server.platform.epoll.EPollIOLoop`
+    (Linux), `hurray.server.platform.kqueue.KQueueIOLoop` (BSD and Mac), or
+    `hurray.server.platform.select.SelectIOLoop` (all platforms).
     """
     def initialize(self, impl, time_func=None, **kwargs):
         super(PollIOLoop, self).initialize(**kwargs)

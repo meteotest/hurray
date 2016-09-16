@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2009 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -19,7 +20,7 @@
 Each module defines its own options which are added to the global
 option namespace, e.g.::
 
-    from tornado.options import define, options
+    from hurray.server.options import define, options
 
     define("mysql_host", default="127.0.0.1:3306", help="Main user DB")
     define("memcache_hosts", default="127.0.0.1:11011", multiple=True,
@@ -37,15 +38,15 @@ must have been imported before the command line is parsed.
 Your ``main()`` method can parse the command line or parse a config file with
 either::
 
-    tornado.options.parse_command_line()
+    hurray.server.options.parse_command_line()
     # or
-    tornado.options.parse_config_file("/etc/server.conf")
+    hurray.server.options.parse_config_file("/etc/server.conf")
 
 .. note:
 
-   When using tornado.options.parse_command_line or
-   tornado.options.parse_config_file, the only options that are set are
-   ones that were previously defined with tornado.options.define.
+   When using hurray.server.options.parse_command_line or
+   hurray.server.options.parse_config_file, the only options that are set are
+   ones that were previously defined with hurray.server.options.define.
 
 Command line formats are what you would expect (``--myoption=myvalue``).
 Config files are just Python files. Global names become options, e.g.::
@@ -58,7 +59,7 @@ We support `datetimes <datetime.datetime>`, `timedeltas
 `define`). We also accept multi-value options. See the documentation for
 `define()` below.
 
-`tornado.options.options` is a singleton instance of `OptionParser`, and
+`hurray.server.options.options` is a singleton instance of `OptionParser`, and
 the top-level functions in this module (`define`, `parse_command_line`, etc)
 simply call methods on it.  You may create additional `OptionParser`
 instances to define isolated sets of options, such as for subcommands.
@@ -71,7 +72,7 @@ instances to define isolated sets of options, such as for subcommands.
    alone so you can manage it yourself, either pass ``--logging=none``
    on the command line or do the following to disable it in code::
 
-       from tornado.options import options, parse_command_line
+       from hurray.server.options import options, parse_command_line
        options.logging = None
        parse_command_line()
 
@@ -105,7 +106,7 @@ class Error(Exception):
 class OptionParser(object):
     """A collection of options, a dictionary with object-like access.
 
-    Normally accessed via static functions in the `tornado.options` module,
+    Normally accessed via static functions in the `hurray.server.options` module,
     which reference a global instance.
     """
     def __init__(self):
@@ -162,7 +163,7 @@ class OptionParser(object):
 
         Useful for copying options into Application settings::
 
-            from tornado.options import define, parse_command_line, options
+            from hurray.server.options import define, parse_command_line, options
 
             define('template_path', group='application')
             define('static_path', group='application')

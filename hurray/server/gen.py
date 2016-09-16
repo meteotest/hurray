@@ -1,4 +1,4 @@
-"""``tornado.gen`` is a generator-based interface to make it easier to
+"""``hurray.server.gen`` is a generator-based interface to make it easier to
 work in an asynchronous environment.  Code using the ``gen`` module
 is technically asynchronous, but it is written as a single generator
 instead of a collection of separate functions.
@@ -61,10 +61,7 @@ be returned when they are all finished:
 If the `~functools.singledispatch` library is available (standard in
 Python 3.4, available via the `singledispatch
 <https://pypi.python.org/pypi/singledispatch>`_ package on older
-versions), additional types of objects may be yielded. Tornado includes
-support for ``asyncio.Future`` and Twisted's ``Deferred`` class when
-``tornado.platform.asyncio`` and ``tornado.platform.twisted`` are imported.
-See the `convert_yielded` function to extend this mechanism.
+versions), additional types of objects may be yielded.
 
 .. versionchanged:: 3.2
    Dict support added.
@@ -185,9 +182,7 @@ def engine(func):
 
     In most cases, functions decorated with `engine` should take
     a ``callback`` argument and invoke it with their result when
-    they are finished.  One notable exception is the
-    `~tornado.web.RequestHandler` :ref:`HTTP verb methods <verbs>`,
-    which use ``self.finish()`` in place of a callback argument.
+    they are finished.
     """
     func = _make_coroutine_wrapper(func, replace_callback=False)
 
@@ -935,7 +930,7 @@ moment.set_result(None)
 
 
 class Runner(object):
-    """Internal implementation of `tornado.gen.engine`.
+    """Internal implementation of `hurray.server.gen.engine`.
 
     Maintains information about pending callbacks and their results.
 
@@ -1210,11 +1205,7 @@ def convert_yielded(yielded):
     The default implementation accepts lists, dictionaries, and Futures.
 
     If the `~functools.singledispatch` library is available, this function
-    may be extended to support additional types. For example::
-
-        @convert_yielded.register(asyncio.Future)
-        def _(asyncio_future):
-            return tornado.platform.asyncio.to_tornado_future(asyncio_future)
+    may be extended to support additional types.
 
     .. versionadded:: 4.1
     """

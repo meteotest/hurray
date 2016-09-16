@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Copyright 2011 Facebook
+# Modifications copyright 2016 Meteotest
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -41,9 +42,9 @@ class TCPServer(object):
     To use `TCPServer`, define a subclass which overrides the `handle_stream`
     method. For example, a simple echo server could be defined like this::
 
-      from tornado.tcpserver import TCPServer
-      from tornado.iostream import StreamClosedError
-      from tornado import gen
+      from hurray.server.tcpserver import TCPServer
+      from hurray.server.iostream import StreamClosedError
+      from hurray.server import gen
 
       class EchoServer(TCPServer):
           @gen.coroutine
@@ -87,17 +88,17 @@ class TCPServer(object):
     3. `add_sockets`: advanced multi-process::
 
             sockets = bind_sockets(8888)
-            tornado.process.fork_processes(0)
+            hurray.server.process.fork_processes(0)
             server = TCPServer()
             server.add_sockets(sockets)
             IOLoop.current().start()
 
        The `add_sockets` interface is more complicated, but it can be
-       used with `tornado.process.fork_processes` to give you more
+       used with `hurray.server.process.fork_processes` to give you more
        flexibility in when the fork happens.  `add_sockets` can
        also be used in single-process servers if you want to create
        your listening sockets in some way other than
-       `~tornado.netutil.bind_sockets`.
+       `~hurray.server.netutil.bind_sockets`.
 
     .. versionadded:: 3.1
        The ``max_buffer_size`` argument.
@@ -144,9 +145,9 @@ class TCPServer(object):
         """Makes this server start accepting connections on the given sockets.
 
         The ``sockets`` parameter is a list of socket objects such as
-        those returned by `~tornado.netutil.bind_sockets`.
+        those returned by `~hurray.server.netutil.bind_sockets`.
         `add_sockets` is typically used in combination with that
-        method and `tornado.process.fork_processes` to provide greater
+        method and `hurray.server.process.fork_processes` to provide greater
         control over the initialization of a multi-process server.
         """
         if self.io_loop is None:
@@ -208,8 +209,7 @@ class TCPServer(object):
         between any server code.
 
         Note that multiple processes are not compatible with the autoreload
-        module (or the ``autoreload=True`` option to `tornado.web.Application`
-        which defaults to True when ``debug=True``).
+        module.
         When using multiple processes, no IOLoops can be created or
         referenced until after the call to ``TCPServer.start(n)``.
         """
