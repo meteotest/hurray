@@ -1,165 +1,57 @@
+# Copyright (c) 2016, Meteotest
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#    * Neither the name of Meteotest nor the
+#      names of its contributors may be used to endorse or promote products
+#      derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 from __future__ import absolute_import
 
-import os
 import struct
 from concurrent.futures import ProcessPoolExecutor
 
 import msgpack
-from h5pyswmr import File, Group, Dataset
 
-from hurray.const import FILE_EXISTS, OK, FILE_NOTFOUND, NOT_IMPLEMENTED, INTERNAL_SERVER_ERROR, GROUP_EXISTS, \
-    NODE_NOTFOUND, DATASET_EXISTS, VALUE_ERROR, TYPE_ERROR
-from hurray.msgpack_numpy import decode_np_array, encode_np_array
+from hurray.msgpack_ext import decode_np_array, encode_np_array
+from hurray.request_handler import handle_request
 from hurray.server import gen
 from hurray.server.ioloop import IOLoop
 from hurray.server.iostream import StreamClosedError
 from hurray.server.log import app_log
-from hurray.server.netutil import bind_unix_socket
+from hurray.server.netutil import bind_unix_socket, bind_sockets
 from hurray.server.options import define, options
 from hurray.server.tcpserver import TCPServer
+from hurray.status_codes import INTERNAL_SERVER_ERROR
 
 MSG_LEN = 4
 PROTOCOL_VER = 1
-DATABASE_CMDS = (b'create_group',
-                 b'get_node',
-                 b'create_dataset',
-                 b'slice_dataset',
-                 b'broadcast_dataset',
-                 b'attrs_setitem',
-                 b'attrs_getitem',
-                 b'attrs_contains',
-                 b'attrs_keys')
 
 define("host", default='localhost', group='application', help="IP address or hostname")
-define("port", default=2222, group='application', help="TCP port to listen on")
+define("port", default=2222, group='application', help="TCP port to listen on (0 = do not listen on a port)")
 define("socket", default=None, group='application', help="Unix socket path")
-define("base", default='.', group='application', help="Database files location")
-
-
-def dc(v):
-    return v.decode(encoding='UTF-8') if v and isinstance(v, bytes) else v
+define("processes", default=0, group='application',
+       help="Number of sub-processes (0 = detect the number of cores available on this machine)")
 
 
 class HurrayServer(TCPServer):
-    @staticmethod
-    def db_path(database):
-        return os.path.abspath(os.path.join(options.base, database))
-
-    @staticmethod
-    def db_exists(database):
-        path = HurrayServer.db_path(dc(database))
-        app_log.debug('Check database %s', path)
-        return os.path.isfile(path)
-
-    @staticmethod
-    def process(msg):
-        cmd = msg[b'cmd']
-        args = msg[b'args']
-
-        app_log.debug('Process "%s" (%s)', dc(cmd),
-                      ", ".join(["%s=%s" % (dc(k), dc(v)) for k, v in args.items()]))
-
-        response = {
-            'status': OK
-        }
-
-        if cmd == b'create_db':
-            if HurrayServer.db_exists(args[b'name']):
-                response['status'] = FILE_EXISTS
-            else:
-                File(HurrayServer.db_path(dc(args[b'name'])), "w-")
-        elif cmd == b'connect_db':
-            if not HurrayServer.db_exists(args[b'name']):
-                response['status'] = FILE_NOTFOUND
-        elif cmd in DATABASE_CMDS:
-            db_name = args.get(b'db')
-            # check if database exists
-            if not HurrayServer.db_exists(db_name):
-                response['status'] = FILE_NOTFOUND
-            db = File(HurrayServer.db_path(dc(db_name)), "r+")
-            path = dc(args[b'path'])
-
-            if cmd == b'get_node':
-                if path not in db:
-                    response['status'] = NODE_NOTFOUND
-                else:
-                    node = db[path]
-                    if isinstance(node, Group):
-                        response['nodetype'] = 'group'
-                    elif isinstance(node, Dataset):
-                        response['nodetype'] = 'dataset'
-                        response['shape'] = node.shape
-                        response['dtype'] = str(node.dtype)
-
-            elif cmd == b'slice_dataset':
-                if path not in db:
-                    response['status'] = NODE_NOTFOUND
-                else:
-                    try:
-                        response['data'] = db[path][args[b'key']]
-                    except ValueError as ve:
-                        response['status'] = VALUE_ERROR
-                        app_log.debug('Invalid slice: %s', ve)
-
-            elif cmd == b'broadcast_dataset':
-                if path not in db:
-                    response['status'] = NODE_NOTFOUND
-                else:
-                    # todo: what should we return?
-                    try:
-                        db[path][args[b'key']] = msg[b'arr']
-                        response['data'] = msg[b'arr']
-                    except ValueError as ve:
-                        response['status'] = VALUE_ERROR
-                        app_log.debug('Invalid slice: %s', ve)
-                    except TypeError as te:
-                        response['status'] = TYPE_ERROR
-                        app_log.debug('Invalid broacdcast: %s', te)
-
-            elif cmd == b'attrs_setitem':
-                if path not in db:
-                    response['status'] = NODE_NOTFOUND
-                else:
-                    if b'value' in args:
-                        data = dc(args[b'value'])
-                    else:
-                        data = msg[b'arr']
-                    db[path].attrs[dc(args[b'key'])] = data
-
-            elif cmd == b'attrs_getitem':
-                if path not in db:
-                    response['status'] = NODE_NOTFOUND
-                else:
-                    response['data'] = db[path].attrs[dc(args[b'key'])]
-
-            elif cmd == b'attrs_contains':
-                if path not in db:
-                    response['status'] = NODE_NOTFOUND
-                else:
-                    response['contains'] = dc(args[b'key']) in db[path].attrs
-
-            elif cmd == b'attrs_keys':
-                if path not in db:
-                    response['status'] = NODE_NOTFOUND
-                else:
-                    response['keys'] = db[path].attrs.keys()
-
-            elif cmd == b'create_group':
-                if path in db:
-                    response['status'] = GROUP_EXISTS
-                else:
-                    db.create_group(path)
-
-            elif cmd == b'create_dataset':
-                if path in db:
-                    response['status'] = DATASET_EXISTS
-                else:
-                    db.create_dataset(name=path, data=msg[b'arr'])
-        else:
-            response['status'] = NOT_IMPLEMENTED
-
-        return msgpack.packb(response, default=encode_np_array)
-
     @gen.coroutine
     def handle_stream(self, stream, address):
         pool = ProcessPoolExecutor(max_workers=1)
@@ -179,9 +71,8 @@ class HurrayServer(TCPServer):
                 msg = msgpack.unpackb(data, object_hook=decode_np_array, use_list=False)
 
                 try:
-                    fut = pool.submit(HurrayServer.process, msg)
+                    fut = pool.submit(handle_request, msg)
                     response = yield fut
-                    # response = HurrayServer.process(msg)
                 except Exception:
                     app_log.exception('Error in subprocess')
                     response = msgpack.packb({
@@ -206,15 +97,22 @@ def main():
     options.parse_command_line()
     server = HurrayServer()
 
-    if options.socket:
-        print("Listening on %s" % options.socket)
-        unix_socket = bind_unix_socket(options.socket)
-        server.add_socket(unix_socket)
-    else:
-        server.bind(options.port, options.host)
-        print("Listening on %s:%d" % (options.host, options.port))
-        server.start(0)  # Forks multiple sub-processes
+    sockets = []
 
+    if options.port != 0:
+        sockets = bind_sockets(options.port, options.host)
+        app_log.info("Listening on %s:%d", options.host, options.port)
+
+    if options.socket:
+        app_log.info("Listening on %s", options.socket)
+        sockets.append(bind_unix_socket(options.socket))
+
+    if len(sockets) < 1:
+        app_log.error('Define a socket and/or a port > 0')
+        return
+
+    server.start(options.processes)
+    server.add_sockets(sockets)
     IOLoop.current().start()
 
 

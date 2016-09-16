@@ -1,1 +1,4 @@
+-e git://github.com/meteotest/h5pySWMR.git#egg=h5pySWMR
 Sphinx==1.4.5
+
+-e .

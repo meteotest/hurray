@@ -1,21 +1,34 @@
-#!/usr/bin/env python
-#
 # Copyright (c) 2016, Meteotest
+# All rights reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#    * Neither the name of Meteotest nor the
+#      names of its contributors may be used to endorse or promote products
+#      derived from this software without specific prior written permission.
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 import sys
+
+import io
+
+from hurray import __version__
 
 try:
     # Use setuptools if available, for install_requires (among other things).
@@ -27,19 +40,24 @@ except ImportError:
 
 kwargs = {}
 
-version = "1.0.dev1"
-
-with open('README.rst') as f:
+with io.open('README.rst', encoding='utf-8') as f:
     kwargs['long_description'] = f.read()
 
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
-    install_requires = []
+    install_requires = [
+        'numpy>=1.6.1',
+        'msgpack-python>=0.4.8',
+        'h5pySWMR>=0.3'
+    ]
+
     if sys.version_info < (2, 7):
         # Only needed indirectly, for singledispatch.
         install_requires.append('ordereddict')
     if sys.version_info < (2, 7, 9):
         install_requires.append('backports.ssl_match_hostname')
+    if sys.version_info < (3, 2):
+        install_requires.append('futures')
     if sys.version_info < (3, 4):
         install_requires.append('singledispatch')
         # Certifi is also optional on 2.7.9+, although making our dependencies
@@ -52,27 +70,29 @@ if setuptools is not None:
 
 setup(
     name="hurray",
-    version=version,
-    packages=["hurray", "hurray.test", "hurray.platform"],
-    package_data={
-        # data files need to be listed both here (which determines what gets
-        # installed) and in MANIFEST.in (which determines what gets included
-        # in the sdist tarball)
-        "hurray.test": [],
-    },
+    version=__version__,
+    packages=["hurray"],
     url="https://github.com/meteotest/hurray/",
     author='Meteotest',
     author_email='remo.goetschi@meteotest.ch',
     maintainer='Reto Aebersold',
     maintainer_email='aeby@substyle.ch',
-    license='MIT',
+    license='BSD',
     description="Hurray is a Python server exposing an API to access hdf5 files",
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: POSIX',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5'
+        'Development Status :: 4 - Beta',
+        'License :: OSI Approved :: BSD License',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
     ],
+    test_suite='tests.get_tests',
+    entry_points={
+        'console_scripts': [
+            'hurray = hurray.__main__:main'
+        ]
+    },
     **kwargs
 )
