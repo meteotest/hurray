@@ -133,6 +133,9 @@ def handle_request(msg):
         db = File(db_path(db_name), "r+")
         path = args[CMD_KW_PATH]
 
+        if len(path) < 1:
+            return response(INVALID_ARGUMENT)
+
         if cmd == CMD_CREATE_GROUP:
             if path in db:
                 status = GROUP_EXISTS
@@ -190,8 +193,11 @@ def handle_request(msg):
             elif cmd == CMD_ATTRIBUTES_SET:
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
+                key = args[CMD_KW_KEY]
+                if len(key) < 1:
+                    return response(INVALID_ARGUMENT)
                 if CMD_KW_DATA in msg:
-                    db[path].attrs[args[CMD_KW_KEY]] = msg[CMD_KW_DATA]
+                    db[path].attrs[key] = msg[CMD_KW_DATA]
                 else:
                     return response(MISSING_DATA)
             elif cmd == CMD_ATTRIBUTES_GET:
