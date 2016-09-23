@@ -7,6 +7,8 @@ hurray
 
 hurray lets you access `HDF5 files <http://www.h5py.org/>`_ over the network.
 
+*Caution: work in progress!*
+
 
 Installation
 ------------
