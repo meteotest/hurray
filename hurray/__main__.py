@@ -12,10 +12,10 @@
 #      names of its contributors may be used to endorse or promote products
 #      derived from this software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -44,11 +44,15 @@ from hurray.status_codes import INTERNAL_SERVER_ERROR
 MSG_LEN = 4
 PROTOCOL_VER = 1
 
-define("host", default='localhost', group='application', help="IP address or hostname")
-define("port", default=2222, group='application', help="TCP port to listen on (0 = do not listen on a port)")
-define("socket", default=None, group='application', help="Unix socket path")
+define("host", default='localhost', group='application',
+       help="IP address or hostname")
+define("port", default=2222, group='application',
+       help="TCP port to listen on (0 = do not listen on a port)")
+define("socket", default=None, group='application',
+       help="Unix socket path")
 define("processes", default=0, group='application',
-       help="Number of sub-processes (0 = detect the number of cores available on this machine)")
+       help="Number of sub-processes (0 = detect the number of cores available"
+       " on this machine)")
 
 
 class HurrayServer(TCPServer):
@@ -65,10 +69,12 @@ class HurrayServer(TCPServer):
                 raw_msg_length = yield stream.read_bytes(MSG_LEN)
                 msg_length = struct.unpack('>I', raw_msg_length)[0]
 
-                app_log.debug("Handle request (Protocol: v%d, Msg size: %d)", protocol_ver, msg_length)
+                app_log.debug("Handle request (Protocol: v%d, Msg size: %d)",
+                              protocol_ver, msg_length)
 
                 data = yield stream.read_bytes(msg_length)
-                msg = msgpack.unpackb(data, object_hook=decode_np_array, use_list=False, encoding='utf-8')
+                msg = msgpack.unpackb(data, object_hook=decode_np_array,
+                                      use_list=False, encoding='utf-8')
 
                 try:
                     fut = pool.submit(handle_request, msg)
