@@ -6,15 +6,24 @@ import unittest
 import msgpack
 import numpy as np
 from hurray.msgpack_ext import decode_np_array
-from hurray.protocol import CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE, CMD_KW_CMD, CMD_KW_DB, \
-    CMD_KW_ARGS, CMD_KW_STATUS, CMD_CREATE_GROUP, CMD_KW_PATH, CMD_CREATE_DATASET, CMD_KW_DATA, CMD_GET_NODE, \
-    NODE_TYPE_GROUP, RESPONSE_NODE_TYPE, NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE, RESPONSE_NODE_DTYPE, CMD_SLICE_DATASET, \
-    CMD_KW_KEY, RESPONSE_DATA, CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_SET, CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_CONTAINS, \
-    RESPONSE_ATTRS_CONTAINS, CMD_ATTRIBUTES_KEYS, RESPONSE_ATTRS_KEYS
+from hurray.protocol import (CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE,
+                             CMD_KW_CMD, CMD_KW_DB, CMD_KW_ARGS, CMD_KW_STATUS,
+                             CMD_CREATE_GROUP, CMD_KW_PATH, CMD_CREATE_DATASET,
+                             CMD_KW_DATA, CMD_GET_NODE, NODE_TYPE_GROUP,
+                             RESPONSE_NODE_TYPE, NODE_TYPE_DATASET,
+                             RESPONSE_NODE_SHAPE, RESPONSE_NODE_DTYPE,
+                             CMD_SLICE_DATASET, CMD_KW_KEY, RESPONSE_DATA,
+                             CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_SET,
+                             CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_CONTAINS,
+                             RESPONSE_ATTRS_CONTAINS, CMD_ATTRIBUTES_KEYS,
+                             RESPONSE_ATTRS_KEYS)
 from hurray.request_handler import handle_request
 from hurray.server.options import options
-from hurray.status_codes import UNKNOWN_COMMAND, MISSING_ARGUMENT, CREATED, FILE_NOT_FOUND, OK, GROUP_EXISTS, \
-    MISSING_DATA, DATASET_EXISTS, NODE_NOT_FOUND, VALUE_ERROR, TYPE_ERROR, KEY_ERROR, INVALID_ARGUMENT
+from hurray.status_codes import (UNKNOWN_COMMAND, MISSING_ARGUMENT, CREATED,
+                                 FILE_NOT_FOUND, OK, GROUP_EXISTS,
+                                 MISSING_DATA, DATASET_EXISTS, NODE_NOT_FOUND,
+                                 VALUE_ERROR, TYPE_ERROR, KEY_ERROR,
+                                 INVALID_ARGUMENT)
 from numpy.testing import assert_array_equal
 
 
@@ -24,7 +33,8 @@ def up(data):
     :param data:
     :return:
     """
-    return msgpack.unpackb(data, object_hook=decode_np_array, use_list=False, encoding='utf-8')
+    return msgpack.unpackb(data, object_hook=decode_np_array, use_list=False,
+                           encoding='utf-8')
 
 
 class RequestHandlerTestCase(unittest.TestCase):
@@ -145,7 +155,8 @@ class RequestHandlerTestCase(unittest.TestCase):
         response = up(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_DATA)
 
-        cmd[CMD_KW_DATA] = np.random.randint(0, 255, size=(5, 10)).astype('uint8')
+        cmd[CMD_KW_DATA] = (np.random.randint(0, 255, size=(5, 10))
+                            .astype('uint8'))
 
         response = up(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
