@@ -44,6 +44,7 @@ from hurray.status_codes import INTERNAL_SERVER_ERROR
 MSG_LEN = 4
 PROTOCOL_VER = 1
 
+# command line arguments
 define("host", default='localhost', group='application',
        help="IP address or hostname")
 define("port", default=2222, group='application',
