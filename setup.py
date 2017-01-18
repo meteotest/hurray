@@ -48,7 +48,7 @@ if setuptools is not None:
     install_requires = [
         'numpy>=1.6.1',
         'msgpack-python>=0.4.8',
-        'h5pySWMR>=0.3'
+        'h5py==2.6',
     ]
 
     if sys.version_info < (2, 7):

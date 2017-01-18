@@ -28,7 +28,8 @@ from __future__ import absolute_import
 import os
 
 import msgpack
-from h5pyswmr import File, Group, Dataset
+
+from .h5swmr import File, Group, Dataset
 from hurray.msgpack_ext import encode_np_array
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE,
                              CMD_CREATE_GROUP, CMD_CREATE_DATASET,
