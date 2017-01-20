@@ -32,18 +32,17 @@ import msgpack
 from .h5swmr import File, Group, Dataset
 from hurray.msgpack_ext import encode_np_array
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE,
-                             CMD_CREATE_GROUP, CMD_CREATE_DATASET,
-                             CMD_GET_NODE, CMD_GET_KEYS, CMD_SLICE_DATASET,
-                             CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_GET,
-                             CMD_ATTRIBUTES_SET, CMD_ATTRIBUTES_CONTAINS,
-                             CMD_ATTRIBUTES_KEYS, CMD_KW_CMD, CMD_KW_ARGS,
-                             CMD_KW_DB, CMD_KW_PATH, CMD_KW_DATA,
-                             RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
+                             CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
+                             CMD_CREATE_DATASET, CMD_GET_NODE, CMD_GET_KEYS,
+                             CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
+                             CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
+                             CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
+                             CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB, CMD_KW_PATH,
+                             CMD_KW_DATA, RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
                              NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
                              RESPONSE_NODE_DTYPE, CMD_KW_KEY, RESPONSE_DATA,
                              CMD_KW_STATUS, RESPONSE_ATTRS_CONTAINS,
-                             RESPONSE_ATTRS_KEYS,
-                             RESPONSE_NODE_KEYS)
+                             RESPONSE_ATTRS_KEYS, RESPONSE_NODE_KEYS)
 from hurray.server.log import app_log
 from hurray.server.options import define, options
 from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
@@ -58,6 +57,7 @@ DATABASE_COMMANDS = (
 )
 
 NODE_COMMANDS = (CMD_CREATE_GROUP,
+                 CMD_REQUIRE_GROUP,
                  CMD_CREATE_DATASET,
                  CMD_GET_NODE,
                  CMD_GET_KEYS,
@@ -157,13 +157,23 @@ def handle_request(msg):
             else:
                 db.create_group(path)
 
+        if cmd == CMD_REQUIRE_GROUP:
+            db.require_group(path)
+            status = OK
+
         elif cmd == CMD_CREATE_DATASET:
             if path in db:
                 status = DATASET_EXISTS
             else:
                 if CMD_KW_DATA not in msg:
                     return response(MISSING_DATA)
-                db.create_dataset(name=path, data=msg[CMD_KW_DATA])
+                dst = db.create_dataset(name=path, data=msg[CMD_KW_DATA])
+                data = {
+                    RESPONSE_NODE_TYPE: NODE_TYPE_DATASET,
+                    RESPONSE_NODE_SHAPE: dst.shape,
+                    RESPONSE_NODE_DTYPE: dst.dtype
+                }
+
         else:  # Commands for existing nodes
             if path not in db:
                 return response(NODE_NOT_FOUND)
@@ -178,7 +188,7 @@ def handle_request(msg):
                     data = {
                         RESPONSE_NODE_TYPE: NODE_TYPE_DATASET,
                         RESPONSE_NODE_SHAPE: node.shape,
-                        RESPONSE_NODE_DTYPE: str(node.dtype)
+                        RESPONSE_NODE_DTYPE: node.dtype
                     }
             elif cmd == CMD_GET_KEYS:
                 node = db[path]
