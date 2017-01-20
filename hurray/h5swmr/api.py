@@ -13,13 +13,11 @@ method (decorated by @reader or @writer) must *not* call other synchronized
 methods, otherwise we get a deadlock!
 """
 
-from __future__ import absolute_import
-
 import os
 
 import h5py
 
-from h5pyswmr.locking import reader, writer
+from .sync import reader, writer
 
 
 class Node(object):

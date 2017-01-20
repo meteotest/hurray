@@ -46,9 +46,10 @@ with io.open('README.rst', encoding='utf-8') as f:
 if setuptools is not None:
     # If setuptools is not available, you're on your own for dependencies.
     install_requires = [
-        'numpy>=1.6.1',
-        'msgpack-python>=0.4.8',
+        'numpy==1.12.0',
+        'msgpack-python==0.4.8',
         'h5py==2.6',
+        'redis==2.10.5',
     ]
 
     if sys.version_info < (2, 7):
