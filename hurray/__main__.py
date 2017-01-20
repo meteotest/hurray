@@ -40,6 +40,7 @@ from hurray.server.netutil import bind_unix_socket, bind_sockets
 from hurray.server.options import define, options
 from hurray.server.tcpserver import TCPServer
 from hurray.status_codes import INTERNAL_SERVER_ERROR
+from hurray.h5swmr.sync import clear_locks
 
 MSG_LEN = 4
 PROTOCOL_VER = 1
@@ -118,6 +119,7 @@ def main():
         app_log.error('Define a socket and/or a port > 0')
         return
 
+    clear_locks()
     server.start(options.processes)
     server.add_sockets(sockets)
     IOLoop.current().start()

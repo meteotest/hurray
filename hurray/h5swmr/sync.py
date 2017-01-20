@@ -50,12 +50,31 @@ DEFAULT_TIMEOUT = 20  # seconds
 ACQ_TIMEOUT = 15
 
 
+PREFIX = "__hurray__"  # prefix for all lock/semaphore/counter names
+
 # note that the process releasing the read/write lock may not be the
 # same as the one that acquired it, so the identifier may have
 # changed and the lock is never released!
 # => we use an identifier unique to all readers/writers.
-WRITELOCK_ID = 'id_reader'
-READLOCK_ID = 'id_writer'
+WRITELOCK_ID = '{}id_reader'.format(PREFIX)
+READLOCK_ID = '{}id_writer'.format(PREFIX)
+
+
+def clear_locks():
+    """
+    Delete all locks, semaphores, and counters. This method is typically
+    called at server startup to make sure there are no pending locks after,
+    e.g., a server crash.
+    """
+    for key in sorted(redis_conn.keys()):
+        if not key.startswith(PREFIX):
+            continue
+        try:
+            print('Clearing redis key {} (value: {})'
+                  .format(key, redis_conn[key]))
+            del redis_conn[key]
+        except KeyError:
+            pass
 
 
 def reader(f):
@@ -69,11 +88,11 @@ def reader(f):
         Wraps reading functions.
         """
         # names of locks
-        mutex3 = 'mutex3__{}'.format(self.file)
-        mutex1 = 'mutex1__{}'.format(self.file)
-        readcount = 'readcount__{}'.format(self.file)
-        r = 'r__{}'.format(self.file)
-        w = 'w__{}'.format(self.file)
+        mutex3 = '{}mutex3__{}'.format(PREFIX, self.file)
+        mutex1 = '{}mutex1__{}'.format(PREFIX, self.file)
+        readcount = '{}readcount__{}'.format(PREFIX, self.file)
+        r = '{}r__{}'.format(PREFIX, self.file)
+        w = '{}w__{}'.format(PREFIX, self.file)
 
         with handle_exit(append=APPEND_SIGHANDLER):
             # Note that try/finally must cover incrementing readcount as well
@@ -140,11 +159,11 @@ def writer(f):
         Wraps writing functions.
         """
         # names of locks
-        mutex2 = 'mutex2__{}'.format(self.file)
+        mutex2 = '{}mutex2__{}'.format(PREFIX, self.file)
         # note that writecount may be > 1 as it also counts the waiting writers
-        writecount = 'writecount__{}'.format(self.file)
-        r = 'r__{}'.format(self.file)
-        w = 'w__{}'.format(self.file)
+        writecount = '{}writecount__{}'.format(PREFIX, self.file)
+        r = '{}r__{}'.format(PREFIX, self.file)
+        w = '{}w__{}'.format(PREFIX, self.file)
 
         with handle_exit():
             writecount_val = None
