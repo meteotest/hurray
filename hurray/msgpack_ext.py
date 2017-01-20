@@ -23,8 +23,11 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-Msgpack encoders and decoders for numpy arrays and slices.
+Msgpack encoders and decoders for numpy "objects" (arrays, types,
+scalars) and slices.
 """
+
+from inspect import isclass
 
 import numpy as np
 from numpy.lib.format import header_data_from_array_1_0
@@ -45,6 +48,15 @@ def encode_np_array(obj):
         return {
             '__slice__': (obj.start, obj.stop, obj.step)
         }
+    elif isclass(obj) and issubclass(obj, np.number):
+        # make sure numpy type classes such as np.float64 (used, e.g., as dtype
+        # arguments) are serialized to strings
+        return obj().dtype.name
+    elif isinstance(obj, np.dtype):
+        return obj.name
+    elif isinstance(obj, np.number):
+        # convert to Python scalar
+        return np.asscalar(obj)
 
     return obj
 
