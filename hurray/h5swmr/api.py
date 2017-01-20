@@ -228,6 +228,7 @@ class File(Group):
         """
         simple context manager (so we can use 'with File() as f')
         """
+        # TODO can be removed
         return self
 
     def __exit__(self, type, value, tb):

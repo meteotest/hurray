@@ -78,6 +78,8 @@ def db_path(database):
     :param database: Name of database file
     :return: Absolute path
     """
+    # TODO 'database' argument needs to be sanitized to make sure no files can
+    # be created outside the options.base directory (using ../)
     return os.path.abspath(os.path.join(options.base, database or ''))
 
 
