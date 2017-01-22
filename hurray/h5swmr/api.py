@@ -257,11 +257,10 @@ class File(Group):
     def __init__(self, name, mode="r", *args, **kwargs):
         """
         try to open/create an h5py.File object
-        note that this must be synchronized!
         """
 
-        if mode == "w":
-            # call h5py.File() in case file needs to be created
+        # call h5py.File() in case file needs to be created
+        if mode in ("w", "w-", "x", "a"):
 
             self.file = name  # this is crucial for the @writer annotation
 
