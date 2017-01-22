@@ -27,7 +27,7 @@ from hurray.status_codes import (UNKNOWN_COMMAND, MISSING_ARGUMENT, CREATED,
 from numpy.testing import assert_array_equal
 
 
-def up(data):
+def unpack(data):
     """
     Unpack msgpacked data
     :param data:
@@ -53,7 +53,7 @@ class RequestHandlerTestCase(unittest.TestCase):
             CMD_KW_CMD: CMD_CREATE_DATABASE,
             CMD_KW_ARGS: {CMD_KW_DB: name}
         }
-        return up(handle_request(cmd))
+        return unpack(handle_request(cmd))
 
     def create_grp(self, db, path):
         cmd = {
@@ -63,7 +63,7 @@ class RequestHandlerTestCase(unittest.TestCase):
                 CMD_KW_PATH: path
             }
         }
-        return up(handle_request(cmd))
+        return unpack(handle_request(cmd))
 
     def create_ds(self, db, path, data):
         cmd = {
@@ -74,10 +74,10 @@ class RequestHandlerTestCase(unittest.TestCase):
             },
             CMD_KW_DATA: data
         }
-        return up(handle_request(cmd))
+        return unpack(handle_request(cmd))
 
     def test_no_cmd(self):
-        response = up(handle_request({}))
+        response = unpack(handle_request({}))
         self.assertEqual(response[CMD_KW_STATUS], UNKNOWN_COMMAND)
 
     def test_create_database(self):
@@ -85,7 +85,7 @@ class RequestHandlerTestCase(unittest.TestCase):
             CMD_KW_CMD: CMD_CREATE_DATABASE,
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         db_name = ''
@@ -102,16 +102,16 @@ class RequestHandlerTestCase(unittest.TestCase):
             CMD_KW_CMD: CMD_CONNECT_DATABASE,
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         db_name = 'test.h5'
         cmd[CMD_KW_ARGS] = {CMD_KW_DB: db_name}
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], FILE_NOT_FOUND)
 
         self.create_db(db_name)
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
 
     def test_create_group(self):
@@ -122,18 +122,18 @@ class RequestHandlerTestCase(unittest.TestCase):
             CMD_KW_CMD: CMD_CREATE_GROUP,
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         cmd[CMD_KW_ARGS] = {CMD_KW_DB: db_name}
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         cmd[CMD_KW_ARGS][CMD_KW_PATH] = 'mygrp'
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], GROUP_EXISTS)
 
     def test_create_dataset(self):
@@ -144,24 +144,24 @@ class RequestHandlerTestCase(unittest.TestCase):
             CMD_KW_CMD: CMD_CREATE_DATASET,
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         cmd[CMD_KW_ARGS] = {CMD_KW_DB: db_name}
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         cmd[CMD_KW_ARGS][CMD_KW_PATH] = 'myds'
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_DATA)
 
         cmd[CMD_KW_DATA] = (np.random.randint(0, 255, size=(5, 10))
                             .astype('uint8'))
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], DATASET_EXISTS)
 
     def test_get_node(self):
@@ -183,12 +183,12 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], NODE_NOT_FOUND)
 
         cmd[CMD_KW_ARGS][CMD_KW_PATH] = grp_name
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
         self.assertEqual(response[RESPONSE_NODE_TYPE], NODE_TYPE_GROUP)
 
@@ -201,7 +201,7 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
         self.assertEqual(response[RESPONSE_NODE_TYPE], NODE_TYPE_DATASET)
         self.assertEqual(response[RESPONSE_NODE_SHAPE], data.shape)
@@ -223,21 +223,21 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = slice(0, 0, 0)  # invalid slice
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
 
         self.assertEqual(response[CMD_KW_STATUS], VALUE_ERROR)
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = slice(0, 1, 1)
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
 
         self.assertEqual(response[CMD_KW_STATUS], OK)
         assert_array_equal(response[RESPONSE_DATA], data[:1])
 
-    def test_boradcast(self):
+    def test_broadcast(self):
         db_name = 'test.h5'
         ds_name = 'testds'
         data = np.array([[1, 2, 3], [4, 5, 6]])
@@ -253,28 +253,28 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_DATA)
 
         new_data = np.array([8, 9, 10])
         cmd[CMD_KW_DATA] = new_data
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = slice(0, 0, 0)  # invalid slice
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
 
         self.assertEqual(response[CMD_KW_STATUS], VALUE_ERROR)
 
         cmd[CMD_KW_DATA] = np.array([8, 9, 10, 11])  # invalid data
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = slice(0, 1, 1)
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
 
         self.assertEqual(response[CMD_KW_STATUS], TYPE_ERROR)
 
         cmd[CMD_KW_DATA] = new_data
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
 
         self.assertEqual(response[CMD_KW_STATUS], OK)
 
@@ -287,7 +287,7 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         assert_array_equal(response[RESPONSE_DATA], [new_data, data[1]])
 
     def test_attrs(self):
@@ -306,18 +306,18 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         attr_key = 'key'
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = attr_key
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_DATA)
 
         attr_data = 'test'
         cmd[CMD_KW_DATA] = attr_data
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
 
         cmd = {
@@ -328,26 +328,26 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], MISSING_ARGUMENT)
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = 'invalid'
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], KEY_ERROR)
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = attr_key
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
         self.assertEqual(response[RESPONSE_DATA], attr_data)
 
         cmd[CMD_KW_CMD] = CMD_ATTRIBUTES_CONTAINS
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
 
         self.assertEqual(response[CMD_KW_STATUS], OK)
         self.assertTrue(response[RESPONSE_ATTRS_CONTAINS])
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = 'invalid'
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertFalse(response[RESPONSE_ATTRS_CONTAINS])
 
         cmd = {
@@ -358,5 +358,5 @@ class RequestHandlerTestCase(unittest.TestCase):
             }
         }
 
-        response = up(handle_request(cmd))
+        response = unpack(handle_request(cmd))
         self.assertEqual(response[RESPONSE_ATTRS_KEYS], (attr_key,))
