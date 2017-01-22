@@ -64,6 +64,17 @@ class Node(object):
         """
         return self._path
 
+    @property
+    def name(self):
+        """
+        Name of the group or dataset
+        """
+        name = os.path.split(self._path)[1]
+        # set root group's name to "/"
+        name = "/" if name == "" else name
+
+        return name
+
     def _wrap_class(self, node):
         """
         Wraps h5py objects into h5pyswmr objects.
@@ -77,12 +88,14 @@ class Node(object):
         Raises:
             TypeError if ``obj`` is of unknown type
         """
+        if isinstance(node, h5py.File):
+            return File(name=self.file, mode="r")
         if isinstance(node, h5py.Group):
             return Group(file=self.file, path=node.name)
         elif isinstance(node, h5py.Dataset):
             return Dataset(file=self.file, path=node.name)
         else:
-            raise TypeError('not implemented!')
+            raise TypeError('unknown h5py node object')
 
 
 class Group(Node):
@@ -147,7 +160,9 @@ class Group(Node):
             # hdf5 file)
             return list(f[self.path].keys())
 
-    # TODO does not yet work because @reader methods are not reentrant!
+    # TODO visit() and visititems() do not yet work because @reader methods
+    # are not reentrant! => just wrap code into an inner function!
+
     # @reader
     # def visit(self, func):
     #     """
@@ -173,6 +188,37 @@ class Group(Node):
     #             obj = self._wrap_class(grp[name])
     #             return func(name, obj)
     #         return self.visit(proxy)
+
+    @reader
+    def tree(self):
+        """
+        Return tree data structure consisting of all groups and datasets.
+
+        Returns: list
+        """
+
+        def buildtree(treenode):
+            h5py_obj, children = treenode
+            assert(children == [])
+            if isinstance(h5py_obj, h5py.Dataset):
+                # wrap h5py dataset object
+                treenode[0] = self._wrap_class(h5py_obj)
+                return
+            else:
+                # wrap h5py group object
+                treenode[0] = self._wrap_class(h5py_obj)
+                for name, childobj in h5py_obj.items():
+                    newnode = [childobj, []]
+                    children.append(newnode)
+                    buildtree(newnode)
+
+        tree = None
+        with h5py.File(self.file, 'r') as f:
+            root = f[self.path]
+            tree = [root, []]  # [h5py object, children]
+            buildtree(tree)
+
+        return tree
 
     @reader
     def items(self):
@@ -208,21 +254,25 @@ class File(Group):
     Wrapper for h5py.File
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name, mode="r", *args, **kwargs):
         """
         try to open/create an h5py.File object
         note that this must be synchronized!
         """
-        # this is crucial for the @writer annotation
-        self.file = args[0]
 
-        # TODO this creates an exclusive lock every time the file is read!!
+        if mode == "w":
+            # call h5py.File() in case file needs to be created
 
-        @writer
-        def init(self):
-            with h5py.File(*args, **kwargs) as f:
-                Group.__init__(self, f.filename, '/')
-        init(self)
+            self.file = name  # this is crucial for the @writer annotation
+
+            @writer
+            def init(self):
+                with h5py.File(name=name, mode=mode, *args, **kwargs):
+                    pass
+
+            init(self)
+
+        Group.__init__(self, name, '/')
 
     def __enter__(self):
         """

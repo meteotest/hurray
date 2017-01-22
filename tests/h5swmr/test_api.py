@@ -6,7 +6,7 @@ import unittest
 import os
 import tempfile
 
-from hurray.h5swmr import File
+from hurray.h5swmr import File, Dataset
 
 
 class TestAPI(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestAPI(unittest.TestCase):
 
     def setUp(self):
         tmpdir = tempfile.gettempdir()
-        self.filename = os.path.join(tmpdir, 'test_attrs.h5')
+        self.filename = os.path.join(tmpdir, 'test_api.h5')
         with File(self.filename, 'w') as f:
             print("created {0}.".format(self.filename))
             f.create_dataset(name='/bla', shape=(30, 30))
@@ -52,6 +52,32 @@ class TestAPI(unittest.TestCase):
             self.assertIn('bla', grp.attrs)
             self.assertEqual(['bla'], grp.attrs.keys())
             self.assertEqual(grp.attrs['bla'], 3)
+
+    def test_tree(self):
+        """ Test tree() method """
+
+        with File(self.filename, 'w') as f:
+            f.create_dataset(name='/group/subgroup/dst1', shape=(30, 30))
+            f.create_dataset(name='/group/subgroup2/dst2', shape=(30, 30))
+            f.create_dataset(name='/group/subgroup2/dst3', shape=(30, 30))
+            f.create_dataset(name='/group2/sub/group/dst4', shape=(30, 30))
+            f.create_group("/emptygroup")
+
+            def traverse(root, level=0):
+                value, children = root
+                if isinstance(value, Dataset):
+                    print("{}├── {} {}".format("  " * level, value.name,
+                                               value.shape))
+                else:
+                    print("{}├── {}".format("  " * level, value.name))
+                for child in children:
+                    traverse(child, level + 1)
+
+            traverse(f.tree())
+            print("")
+            traverse(f["/group/subgroup/"].tree())
+            print("")
+            traverse(f["/emptygroup"].tree())
 
     # def test_visit(self):
     #     """
