@@ -33,10 +33,10 @@ from hurray import __version__
 try:
     # Use setuptools if available, for install_requires (among other things).
     import setuptools
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     setuptools = None
-    from distutils.core import setup
+    from distutils.core import setup, find_packages
 
 kwargs = {}
 
@@ -72,7 +72,8 @@ if setuptools is not None:
 setup(
     name="hurray",
     version=__version__,
-    packages=["hurray"],
+    # packages=["hurray"],
+    packages=find_packages(),
     url="https://github.com/meteotest/hurray/",
     author='Meteotest',
     author_email='remo.goetschi@meteotest.ch',
