@@ -26,6 +26,7 @@
 from __future__ import absolute_import
 
 import struct
+import logging
 from concurrent.futures import ProcessPoolExecutor
 
 import msgpack
@@ -55,9 +56,12 @@ define("socket", default=None, group='application',
 define("processes", default=0, group='application',
        help="Number of sub-processes (0 = detect the number of cores available"
        " on this machine)")
+define("debug", default=0, group='application',
+       help="Write debug information to stdout?")
 
 
 class HurrayServer(TCPServer):
+
     @gen.coroutine
     def handle_stream(self, stream, address):
         pool = ProcessPoolExecutor(max_workers=1)
@@ -103,6 +107,12 @@ class HurrayServer(TCPServer):
 
 def main():
     options.parse_command_line()
+
+    debug = bool(options.debug)
+    if debug:
+        app_log.setLevel(logging.DEBUG)
+        app_log.debug("debug mode")
+
     server = HurrayServer()
 
     sockets = []
