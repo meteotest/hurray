@@ -32,8 +32,13 @@ from inspect import isclass
 import numpy as np
 from numpy.lib.format import header_data_from_array_1_0
 
+from .h5swmr import Group, Dataset
+from hurray.protocol import (RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
+                             NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
+                             RESPONSE_NODE_DTYPE, RESPONSE_NODE_PATH)
 
-def encode_np_array(obj):
+
+def encode(obj):
     """
     Encode numpy arrays and slices
     :param obj: object to serialize
@@ -57,11 +62,27 @@ def encode_np_array(obj):
     elif isinstance(obj, np.number):
         # convert to Python scalar
         return np.asscalar(obj)
+    elif isinstance(obj, Group):
+        # TODO include attrs?
+        data = {
+            RESPONSE_NODE_TYPE: NODE_TYPE_GROUP,
+            RESPONSE_NODE_PATH: obj.path,
+        }
+        return data
+    elif isinstance(obj, Dataset):
+        # TODO include attrs?
+        data = {
+            RESPONSE_NODE_TYPE: NODE_TYPE_DATASET,
+            RESPONSE_NODE_PATH: obj.path,
+            RESPONSE_NODE_SHAPE: obj.shape,
+            RESPONSE_NODE_DTYPE: obj.dtype,
+        }
+        return data
 
     return obj
 
 
-def decode_np_array(obj):
+def decode(obj):
     """
     Decode numpy arrays and slices
     :param obj: object to decode

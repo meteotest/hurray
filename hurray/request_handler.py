@@ -30,10 +30,11 @@ import os
 import msgpack
 
 from .h5swmr import File, Group, Dataset
-from hurray.msgpack_ext import encode_np_array
+from hurray.msgpack_ext import encode as encode_msgpack
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE,
                              CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
                              CMD_CREATE_DATASET, CMD_GET_NODE, CMD_GET_KEYS,
+                             CMD_GET_TREE,
                              CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
                              CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
                              CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
@@ -42,7 +43,8 @@ from hurray.protocol import (CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE,
                              NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
                              RESPONSE_NODE_DTYPE, CMD_KW_KEY, RESPONSE_DATA,
                              CMD_KW_STATUS, RESPONSE_ATTRS_CONTAINS,
-                             RESPONSE_ATTRS_KEYS, RESPONSE_NODE_KEYS)
+                             RESPONSE_ATTRS_KEYS, RESPONSE_NODE_KEYS,
+                             RESPONSE_NODE_TREE)
 from hurray.server.log import app_log
 from hurray.server.options import define, options
 from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
@@ -61,6 +63,7 @@ NODE_COMMANDS = (CMD_CREATE_GROUP,
                  CMD_CREATE_DATASET,
                  CMD_GET_NODE,
                  CMD_GET_KEYS,
+                 CMD_GET_TREE,
                  CMD_SLICE_DATASET,
                  CMD_BROADCAST_DATASET,
                  CMD_ATTRIBUTES_GET,
@@ -95,12 +98,20 @@ def db_exists(database):
 
 
 def response(status, data=None):
-    res = {
+    """
+    Args:
+        status: status code of response
+        data: TODO
+    """
+    resp = {
         CMD_KW_STATUS: status
     }
-    if data:
-        res.update(data)
-    return msgpack.packb(res, default=encode_np_array, use_bin_type=True)
+    if data is not None:
+        resp.update(data)
+
+    print("response: ", resp)
+
+    return msgpack.packb(resp, default=encode_msgpack, use_bin_type=True)
 
 
 def handle_request(msg):
@@ -168,6 +179,7 @@ def handle_request(msg):
                 if CMD_KW_DATA not in msg:
                     return response(MISSING_DATA)
                 dst = db.create_dataset(name=path, data=msg[CMD_KW_DATA])
+                # TODO let the msgpack encoder encode Dataset objects!
                 data = {
                     RESPONSE_NODE_TYPE: NODE_TYPE_DATASET,
                     RESPONSE_NODE_SHAPE: dst.shape,
@@ -180,16 +192,8 @@ def handle_request(msg):
 
             if cmd == CMD_GET_NODE:
                 node = db[path]
-                if isinstance(node, Group):
-                    data = {
-                        RESPONSE_NODE_TYPE: NODE_TYPE_GROUP
-                    }
-                elif isinstance(node, Dataset):
-                    data = {
-                        RESPONSE_NODE_TYPE: NODE_TYPE_DATASET,
-                        RESPONSE_NODE_SHAPE: node.shape,
-                        RESPONSE_NODE_DTYPE: node.dtype
-                    }
+                # let the msgpack encoder handle encoding of Groups/Datasets
+                data = node
             elif cmd == CMD_GET_KEYS:
                 node = db[path]
                 if isinstance(node, Group):
@@ -197,6 +201,15 @@ def handle_request(msg):
                         # without list() it does not work with py3 (returns a
                         # view on a closed hdf5 file)
                         RESPONSE_NODE_KEYS: list(node.keys())
+                    }
+                elif isinstance(node, Dataset):
+                    return response(INVALID_ARGUMENT)
+            elif cmd == CMD_GET_TREE:
+                node = db[path]
+                if isinstance(node, Group):
+                    tree = node.tree()
+                    data = {
+                        RESPONSE_NODE_TREE: tree
                     }
                 elif isinstance(node, Dataset):
                     return response(INVALID_ARGUMENT)

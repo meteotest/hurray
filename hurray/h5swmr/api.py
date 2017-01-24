@@ -158,7 +158,8 @@ class Group(Node):
         with h5py.File(self.file, 'r') as f:
             # w/o list() it does not work with py3 (returns a view on a closed
             # hdf5 file)
-            return list(f[self.path].keys())
+            keys = list(f[self.path].keys())
+            return keys
 
     # TODO visit() and visititems() do not yet work because @reader methods
     # are not reentrant! => just wrap code into an inner function!
@@ -193,6 +194,9 @@ class Group(Node):
     def tree(self):
         """
         Return tree data structure consisting of all groups and datasets.
+        A tree node is defined recursively as a tuple:
+
+            [Dataset/Group, [children]]
 
         Returns: list
         """

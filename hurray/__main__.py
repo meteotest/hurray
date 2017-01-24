@@ -31,7 +31,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import msgpack
 
-from hurray.msgpack_ext import decode_np_array, encode_np_array
+from hurray.msgpack_ext import decode, encode
 from hurray.request_handler import handle_request
 from hurray.server import gen
 from hurray.server.ioloop import IOLoop
@@ -79,7 +79,7 @@ class HurrayServer(TCPServer):
                               protocol_ver, msg_length)
 
                 data = yield stream.read_bytes(msg_length)
-                msg = msgpack.unpackb(data, object_hook=decode_np_array,
+                msg = msgpack.unpackb(data, object_hook=decode,
                                       use_list=False, encoding='utf-8')
 
                 try:
@@ -89,7 +89,7 @@ class HurrayServer(TCPServer):
                     app_log.exception('Error in subprocess')
                     response = msgpack.packb({
                         'status': INTERNAL_SERVER_ERROR,
-                    }, default=encode_np_array)
+                    }, default=encode)
 
                 yield stream.write(struct.pack('>I', PROTOCOL_VER))
 
