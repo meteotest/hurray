@@ -46,7 +46,7 @@ def encode(obj):
     """
     if isinstance(obj, np.ndarray):
         arr = header_data_from_array_1_0(obj)
-        arr['data'] = obj.tostring()
+        arr['arraydata'] = obj.tostring()
         arr['__ndarray__'] = True
         return arr
     elif isinstance(obj, slice):
@@ -90,7 +90,7 @@ def decode(obj):
     """
 
     if '__ndarray__' in obj:
-        arr = np.fromstring(obj['data'], dtype=np.dtype(obj['descr']))
+        arr = np.fromstring(obj['arraydata'], dtype=np.dtype(obj['descr']))
         shape = obj['shape']
         arr.shape = shape
         if obj['fortran_order']:

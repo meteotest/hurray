@@ -107,7 +107,8 @@ def response(status, data=None):
         CMD_KW_STATUS: status
     }
     if data is not None:
-        resp.update(data)
+        resp["data"] = data
+        # resp.update(data)
 
     print("response: ", resp)
 
@@ -180,11 +181,7 @@ def handle_request(msg):
                     return response(MISSING_DATA)
                 dst = db.create_dataset(name=path, data=msg[CMD_KW_DATA])
                 # TODO let the msgpack encoder encode Dataset objects!
-                data = {
-                    RESPONSE_NODE_TYPE: NODE_TYPE_DATASET,
-                    RESPONSE_NODE_SHAPE: dst.shape,
-                    RESPONSE_NODE_DTYPE: dst.dtype
-                }
+                data = dst
 
         else:  # Commands for existing nodes
             if path not in db:
@@ -217,9 +214,7 @@ def handle_request(msg):
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
                 try:
-                    data = {
-                        RESPONSE_DATA: db[path][args[CMD_KW_KEY]]
-                    }
+                    data = db[path][args[CMD_KW_KEY]]
                 except ValueError as ve:
                     status = VALUE_ERROR
                     app_log.debug('Invalid slice: %s', ve)
