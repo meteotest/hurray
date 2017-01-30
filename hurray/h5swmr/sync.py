@@ -37,12 +37,8 @@ from functools import wraps
 
 import redis
 
+from ..server.options import options
 from .exithandler import handle_exit
-
-
-# we make sure that redis connections do not time out
-redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0,
-                               decode_responses=True)  # important for Python3
 
 
 APPEND_SIGHANDLER = False
@@ -60,19 +56,36 @@ WRITELOCK_ID = '{}id_reader'.format(PREFIX)
 READLOCK_ID = '{}id_writer'.format(PREFIX)
 
 
+__redis_conn = None
+
+
+def redis_conn():
+    """
+    Create and return redis connection. Singleton.
+    """
+    if __redis_conn is None:
+        # we make sure that redis connections do not time out
+        redis_conn = redis.StrictRedis(host=options.redis_host,
+                                       port=options.redis_port,
+                                       db=options.redis_db,
+                                       decode_responses=True)
+    return redis_conn
+
+
 def clear_locks():
     """
     Delete all locks, semaphores, and counters. This method is typically
     called at server startup to make sure there are no pending locks after,
     e.g., a server crash.
     """
-    for key in sorted(redis_conn.keys()):
+    conn = redis_conn()
+    for key in sorted(conn.keys()):
         if not key.startswith(PREFIX):
             continue
         try:
             print('Clearing redis key {} (value: {})'
-                  .format(key, redis_conn[key]))
-            del redis_conn[key]
+                  .format(key, conn[key]))
+            del conn[key]
         except KeyError:
             pass
 
@@ -87,6 +100,8 @@ def reader(f):
         """
         Wraps reading functions.
         """
+        conn = redis_conn()
+
         # names of locks
         mutex3 = '{}mutex3__{}'.format(PREFIX, self.file)
         mutex1 = '{}mutex1__{}'.format(PREFIX, self.file)
@@ -102,13 +117,12 @@ def reader(f):
             # example).
             readcount_val = None
             try:
-                with redis_lock(redis_conn, mutex3):
-                    with redis_lock(redis_conn, r):
+                with redis_lock(conn, mutex3):
+                    with redis_lock(conn, r):
                         # mutex1's purpose is to make readcount++ together with
                         # the readcount == 1 check atomic
-                        with redis_lock(redis_conn, mutex1):
-                            readcount_val = redis_conn.incr(readcount,
-                                                            amount=1)
+                        with redis_lock(conn, mutex1):
+                            readcount_val = conn.incr(readcount, amount=1)
 
                             # testing if locks/counters are cleaned up in case
                             # of abrupt process termination
@@ -118,7 +132,7 @@ def reader(f):
 
                             # first reader sets the w lock to block writers
                             if readcount_val == 1:
-                                if not acquire_lock(redis_conn, w,
+                                if not acquire_lock(conn, w,
                                                     WRITELOCK_ID):
                                     raise LockException("could not acquire "
                                                         "write lock {0}"
@@ -132,10 +146,10 @@ def reader(f):
                 if readcount_val is not None:
                     # again, mutex1's purpose is to make readcount-- and the
                     # subsequent check atomic.
-                    with redis_lock(redis_conn, mutex1):
-                        readcount_val = redis_conn.decr(readcount, amount=1)
+                    with redis_lock(conn, mutex1):
+                        readcount_val = conn.decr(readcount, amount=1)
                         if readcount_val == 0:
-                            if not release_lock(redis_conn, w, WRITELOCK_ID):
+                            if not release_lock(conn, w, WRITELOCK_ID):
                                 # Note that it's possible that, even though
                                 # readcount was > 0, w was not set. This can
                                 # happen if – during execution of the code
@@ -158,6 +172,8 @@ def writer(f):
         """
         Wraps writing functions.
         """
+        conn = redis_conn()
+
         # names of locks
         mutex2 = '{}mutex2__{}'.format(PREFIX, self.file)
         # note that writecount may be > 1 as it also counts the waiting writers
@@ -170,15 +186,15 @@ def writer(f):
             try:
                 # mutex2's purpose is to make writecount++ together with
                 # the writecount == 1 check atomic
-                with redis_lock(redis_conn, mutex2):
-                    writecount_val = redis_conn.incr(writecount, amount=1)
+                with redis_lock(conn, mutex2):
+                    writecount_val = conn.incr(writecount, amount=1)
                     # first writer sets r to block readers
                     if writecount_val == 1:
-                        if not acquire_lock(redis_conn, r, READLOCK_ID):
+                        if not acquire_lock(conn, r, READLOCK_ID):
                             raise LockException("could not acquire read lock "
                                                 "{0}".format(r))
 
-                with redis_lock(redis_conn, w):
+                with redis_lock(conn, w):
                     # perform writing operation
                     return_val = f(self, *args, **kwargs)
                     return return_val
@@ -187,10 +203,10 @@ def writer(f):
                 # Also, if we are the last writer, we have to release r to open
                 # the gate for readers.
                 if writecount_val is not None:
-                    with redis_lock(redis_conn, mutex2):
-                        writecount_val = redis_conn.decr(writecount, amount=1)
+                    with redis_lock(conn, mutex2):
+                        writecount_val = conn.decr(writecount, amount=1)
                         if writecount_val == 0:
-                            if not release_lock(redis_conn, r, READLOCK_ID):
+                            if not release_lock(conn, r, READLOCK_ID):
                                 # Note that it's possible that, even though
                                 # writecount was > 0, r was not set. This can
                                 # happen if – during execution of the code

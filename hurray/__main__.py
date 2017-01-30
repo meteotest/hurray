@@ -31,8 +31,6 @@ from concurrent.futures import ProcessPoolExecutor
 
 import msgpack
 
-from hurray.msgpack_ext import decode, encode
-from hurray.request_handler import handle_request
 from hurray.server import gen
 from hurray.server.ioloop import IOLoop
 from hurray.server.iostream import StreamClosedError
@@ -41,6 +39,8 @@ from hurray.server.netutil import bind_unix_socket, bind_sockets
 from hurray.server.options import define, options
 from hurray.server.tcpserver import TCPServer
 from hurray.status_codes import INTERNAL_SERVER_ERROR
+from hurray.msgpack_ext import decode, encode
+from hurray.request_handler import handle_request
 from hurray.h5swmr.sync import clear_locks
 
 MSG_LEN = 4
@@ -58,6 +58,12 @@ define("processes", default=0, group='application',
        " on this machine)")
 define("debug", default=0, group='application',
        help="Write debug information to stdout?")
+define("redis_host", default="localhost", group='application',
+       help="Redis server host name")
+define("redis_port", default=6379, group='application',
+       help="Redis server port")
+define("redis_db", default=0, group='application',
+       help="Redis server db number")
 
 
 class HurrayServer(TCPServer):
