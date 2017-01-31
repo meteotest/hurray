@@ -14,9 +14,6 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-# for github pages
-GH_PAGES_SOURCES = docs hurray Makefile
-
 .PHONY: help
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -50,20 +47,6 @@ help:
 .PHONY: clean
 clean:
 	rm -rf $(BUILDDIR)/*
-
-.PHONY: gh-pages
-gh-pages:
-	cd ..
-	git checkout gh-pages
-	rm -rf _images_ sources _static
-	touch .nojekyll
-	git checkout master docs hurray logo.png favicon.ico
-	make html -C docs
-	mv docs/_build/html* ./
-	git add -A
-	git commit -m "updating github page..."
-	git push origin gh-pages
-	git checkout master
 
 .PHONY: html
 html:
