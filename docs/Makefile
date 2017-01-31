@@ -53,6 +53,7 @@ clean:
 
 .PHONY: gh-pages
 gh-pages:
+	cd ..
 	git checkout gh-pages
 	rm -rf _images_ sources _static
 	touch .nojekyll
