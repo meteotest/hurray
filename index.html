@@ -152,57 +152,57 @@ $ hurray
 </pre></div>
 </div>
 <p>Start an ipython/python shell and connect to the hurray server:</p>
-<div class="highlight-ipython"><div class="highlight"><pre><span></span>In [1]: import hurraypy as hr
+<div class="highlight-ipython"><div class="highlight"><pre><span></span><span class="n">In</span> <span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="kn">import</span> <span class="nn">hurraypy</span> <span class="kn">as</span> <span class="nn">hr</span>
 
-In [2]: conn = hp.connect(&#39;localhost&#39;, &#39;2222&#39;)
+<span class="n">In</span> <span class="p">[</span><span class="mi">2</span><span class="p">]:</span> <span class="n">conn</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;2222&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Now you&#8217;re ready to create files, groups, and arrays (called &#8220;datasets&#8221;):</p>
-<div class="highlight-ipython"><div class="highlight"><pre><span></span>In [3]: conn.create_file(&quot;test.h5&quot;)
+<div class="highlight-ipython"><div class="highlight"><pre><span></span><span class="n">In</span> <span class="p">[</span><span class="mi">3</span><span class="p">]:</span> <span class="n">conn</span><span class="o">.</span><span class="n">create_file</span><span class="p">(</span><span class="s2">&quot;test.h5&quot;</span><span class="p">)</span>
 
-In [4]: f = conn.use_file(&quot;test.h5&quot;)
+<span class="n">In</span> <span class="p">[</span><span class="mi">4</span><span class="p">]:</span> <span class="n">f</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">use_file</span><span class="p">(</span><span class="s2">&quot;test.h5&quot;</span><span class="p">)</span>
 
-In [5]: f.create_group(&quot;/data&quot;)
-Out[5]: &lt;HDF5 Group (db=test.h5, path=/data)&gt;
+<span class="n">In</span> <span class="p">[</span><span class="mi">5</span><span class="p">]:</span> <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;/data&quot;</span><span class="p">)</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">5</span><span class="p">]:</span> <span class="o">&lt;</span><span class="n">HDF5</span> <span class="n">Group</span> <span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="n">test</span><span class="o">.</span><span class="n">h5</span><span class="p">,</span> <span class="n">path</span><span class="o">=/</span><span class="n">data</span><span class="p">)</span><span class="o">&gt;</span>
 
-In [6]: grp = f[&quot;/data&quot;]
+<span class="n">In</span> <span class="p">[</span><span class="mi">6</span><span class="p">]:</span> <span class="n">grp</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">&quot;/data&quot;</span><span class="p">]</span>
 
-In [7]: import numpy as np
+<span class="n">In</span> <span class="p">[</span><span class="mi">7</span><span class="p">]:</span> <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 
-In [8]: arr = np.random.random((400, 300))
+<span class="n">In</span> <span class="p">[</span><span class="mi">8</span><span class="p">]:</span> <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">400</span><span class="p">,</span> <span class="mi">300</span><span class="p">))</span>
 
-In [9]: dataset = grp.create_dataset(&quot;myarray&quot;, data=arr)
+<span class="n">In</span> <span class="p">[</span><span class="mi">9</span><span class="p">]:</span> <span class="n">dataset</span> <span class="o">=</span> <span class="n">grp</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="s2">&quot;myarray&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">arr</span><span class="p">)</span>
 
-In [10]: dataset.shape
-Out[10]: (400, 300)
+<span class="n">In</span> <span class="p">[</span><span class="mi">10</span><span class="p">]:</span> <span class="n">dataset</span><span class="o">.</span><span class="n">shape</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">10</span><span class="p">]:</span> <span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
 
-In [11]: dataset.dtype
-Out[11]: &#39;float64&#39;
+<span class="n">In</span> <span class="p">[</span><span class="mi">11</span><span class="p">]:</span> <span class="n">dataset</span><span class="o">.</span><span class="n">dtype</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">11</span><span class="p">]:</span> <span class="s1">&#39;float64&#39;</span>
 </pre></div>
 </div>
 <p>You can retrieve data using familiar NumPy syntax.</p>
-<div class="highlight-ipython"><div class="highlight"><pre><span></span>In [12]: dataset[:]
-Out[12]: array([[ 0.22309977,  0.22696059,  0.39669007, ...,  0.10220055,
-                  0.53091305,  0.16883515],
-                [ 0.56145178,  0.4425107 ,  0.22402512, ...,  0.99954642,
-                  0.80709289,  0.35570268],
-                [ 0.40499767,  0.59344728,  0.52269062, ...,  0.62949525,
-                  0.67829918,  0.78454277],
-                ...,
-                [ 0.72620273,  0.33525975,  0.15172425, ...,  0.04085315,
-                  0.15373999,  0.04217979],
-                [ 0.43795463,  0.92673444,  0.6299503 , ...,  0.22689763,
-                  0.73296667,  0.71055739],
-                [ 0.6304112 ,  0.75745183,  0.42235604, ...,  0.08328294,
-                  0.51188761,  0.0506138 ]])
+<div class="highlight-ipython"><div class="highlight"><pre><span></span><span class="n">In</span> <span class="p">[</span><span class="mi">12</span><span class="p">]:</span> <span class="n">dataset</span><span class="p">[:]</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">12</span><span class="p">]:</span> <span class="n">array</span><span class="p">([[</span> <span class="mf">0.22309977</span><span class="p">,</span>  <span class="mf">0.22696059</span><span class="p">,</span>  <span class="mf">0.39669007</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">0.10220055</span><span class="p">,</span>
+                  <span class="mf">0.53091305</span><span class="p">,</span>  <span class="mf">0.16883515</span><span class="p">],</span>
+                <span class="p">[</span> <span class="mf">0.56145178</span><span class="p">,</span>  <span class="mf">0.4425107</span> <span class="p">,</span>  <span class="mf">0.22402512</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">0.99954642</span><span class="p">,</span>
+                  <span class="mf">0.80709289</span><span class="p">,</span>  <span class="mf">0.35570268</span><span class="p">],</span>
+                <span class="p">[</span> <span class="mf">0.40499767</span><span class="p">,</span>  <span class="mf">0.59344728</span><span class="p">,</span>  <span class="mf">0.52269062</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">0.62949525</span><span class="p">,</span>
+                  <span class="mf">0.67829918</span><span class="p">,</span>  <span class="mf">0.78454277</span><span class="p">],</span>
+                <span class="o">...</span><span class="p">,</span>
+                <span class="p">[</span> <span class="mf">0.72620273</span><span class="p">,</span>  <span class="mf">0.33525975</span><span class="p">,</span>  <span class="mf">0.15172425</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">0.04085315</span><span class="p">,</span>
+                  <span class="mf">0.15373999</span><span class="p">,</span>  <span class="mf">0.04217979</span><span class="p">],</span>
+                <span class="p">[</span> <span class="mf">0.43795463</span><span class="p">,</span>  <span class="mf">0.92673444</span><span class="p">,</span>  <span class="mf">0.6299503</span> <span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">0.22689763</span><span class="p">,</span>
+                  <span class="mf">0.73296667</span><span class="p">,</span>  <span class="mf">0.71055739</span><span class="p">],</span>
+                <span class="p">[</span> <span class="mf">0.6304112</span> <span class="p">,</span>  <span class="mf">0.75745183</span><span class="p">,</span>  <span class="mf">0.42235604</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span>  <span class="mf">0.08328294</span><span class="p">,</span>
+                  <span class="mf">0.51188761</span><span class="p">,</span>  <span class="mf">0.0506138</span> <span class="p">]])</span>
 </pre></div>
 </div>
 <p>Slicing and fancy indexing allow partial reading and broadcasting:</p>
-<div class="highlight-ipython"><div class="highlight"><pre><span></span>In [13]: dataset[0, 0:3] = 999
+<div class="highlight-ipython"><div class="highlight"><pre><span></span><span class="n">In</span> <span class="p">[</span><span class="mi">13</span><span class="p">]:</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">999</span>
 
-In [14]: dataset[0, 0:4]  # only an array of length 4 is transferred
-Out[14]: array([  9.99000000e+02,   9.99000000e+02,   9.99000000e+02,
-                  3.72972583e-01])
+<span class="n">In</span> <span class="p">[</span><span class="mi">14</span><span class="p">]:</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>  <span class="c1"># only an array of length 4 is transferred</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">14</span><span class="p">]:</span> <span class="n">array</span><span class="p">([</span>  <span class="mf">9.99000000e+02</span><span class="p">,</span>   <span class="mf">9.99000000e+02</span><span class="p">,</span>   <span class="mf">9.99000000e+02</span><span class="p">,</span>
+                  <span class="mf">3.72972583e-01</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>Contents:</p>
