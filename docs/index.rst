@@ -6,9 +6,8 @@
 
 .. image:: ../logo.png
 
-
-Hurray – a server for array data
-================================
+Hurray – a server for arrays
+============================
 
 Quickstart
 ##########
@@ -88,11 +87,18 @@ Slicing and fancy indexing allow partial reading and broadcasting:
                       3.72972583e-01])
 
 
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
+
+
+Developed by `Meteotest <https://www.meteotest.ch/>`_ in Switzerland.
+
+.. image:: ./meteotest.png
+    :width: 200px
 
 
 Indices and tables
@@ -101,4 +107,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
