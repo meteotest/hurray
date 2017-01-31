@@ -15,7 +15,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 # for github pages
-GH_PAGES_SOURCES = docs Makefile
+GH_PAGES_SOURCES = docs hurray Makefile
 
 .PHONY: help
 help:
