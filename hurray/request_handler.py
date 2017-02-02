@@ -41,7 +41,7 @@ from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB, CMD_KW_PATH,
                              CMD_KW_DATA, RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
                              NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
-                             RESPONSE_NODE_DTYPE, CMD_KW_KEY, RESPONSE_DATA,
+                             RESPONSE_NODE_DTYPE, CMD_KW_KEY,
                              CMD_KW_STATUS, RESPONSE_ATTRS_CONTAINS,
                              RESPONSE_ATTRS_KEYS, RESPONSE_NODE_KEYS,
                              RESPONSE_NODE_TREE)
@@ -171,7 +171,6 @@ def handle_request(msg):
 
         if cmd == CMD_REQUIRE_GROUP:
             db.require_group(path)
-            status = OK
 
         elif cmd == CMD_CREATE_DATASET:
             if path in db:
@@ -180,7 +179,6 @@ def handle_request(msg):
                 if CMD_KW_DATA not in msg:
                     return response(MISSING_DATA)
                 dst = db.create_dataset(name=path, data=msg[CMD_KW_DATA])
-                # TODO let the msgpack encoder encode Dataset objects!
                 data = dst
 
         else:  # Commands for existing nodes
@@ -247,9 +245,7 @@ def handle_request(msg):
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
                 try:
-                    data = {
-                        RESPONSE_DATA: db[path].attrs[args[CMD_KW_KEY]]
-                    }
+                    data = db[path].attrs[args[CMD_KW_KEY]]
                 except KeyError as ke:
                     status = KEY_ERROR
                     app_log.debug('Invalid key: %s', ke)
