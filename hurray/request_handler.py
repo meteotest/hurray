@@ -31,7 +31,7 @@ import msgpack
 
 from .h5swmr import File, Group, Dataset
 from hurray.msgpack_ext import encode as encode_msgpack
-from hurray.protocol import (CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE,
+from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
                              CMD_CREATE_DATASET, CMD_GET_NODE, CMD_GET_KEYS,
                              CMD_GET_TREE,
@@ -55,7 +55,7 @@ from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
 
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
-    CMD_CONNECT_DATABASE
+    CMD_USE_DATABASE
 )
 
 NODE_COMMANDS = (CMD_CREATE_GROUP,
@@ -143,7 +143,7 @@ def handle_request(msg):
             else:
                 File(db_path(db), 'w-')
                 status = CREATED
-        elif cmd == CMD_CONNECT_DATABASE:
+        elif cmd == CMD_USE_DATABASE:
             if not db_exists(db):
                 status = FILE_NOT_FOUND
 

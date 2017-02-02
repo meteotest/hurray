@@ -25,7 +25,14 @@
 
 """The hurray server and tools."""
 
-from __future__ import (absolute_import, division, print_function,
-                        with_statement)
+from hurray.server.options import define
 
 __version__ = "0.0.2"
+
+
+define("redis_host", default="localhost", group='application',
+       help="Redis server host name")
+define("redis_port", default=6379, group='application',
+       help="Redis server port")
+define("redis_db", default=0, group='application',
+       help="Redis server db number")

@@ -7,10 +7,24 @@
 .. image:: ../logo.png
 
 Hurray – a server for arrays
-============================
+############################
+
+.. warning:: Hurray is still in an early stage of development. It is not yet
+    ready for production use. See the :doc:`roadmap` for details.
+
+
+Contents
+********
+
+.. toctree::
+   :maxdepth: 1
+
+   roadmap
+   faq
+
 
 Quickstart
-##########
+**********
 
 Install and start the hurray server::
 
@@ -87,18 +101,10 @@ Slicing and fancy indexing allow partial reading and broadcasting:
                       3.72972583e-01])
 
 
-
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-
-
-
-Developed by `Meteotest <https://www.meteotest.ch/>`_ in Switzerland.
+Hurray is developed by `Meteotest <https://www.meteotest.ch/>`_.
 
 .. image:: ./meteotest.png
-    :width: 200px
+    :width: 100px
 
 
 Indices and tables
