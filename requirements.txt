@@ -1,3 +1,1 @@
--e git://github.com/meteotest/h5pySWMR.git#egg=h5pySWMR
-
 -e .

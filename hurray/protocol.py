@@ -35,7 +35,7 @@ CMD_KW_DB = 'db'
 CMD_KW_STATUS = 'status'
 
 CMD_CREATE_DATABASE = 'create_db'
-CMD_CONNECT_DATABASE = 'connect_db'
+CMD_USE_DATABASE = 'use_db'
 CMD_CREATE_GROUP = 'create_group'
 CMD_REQUIRE_GROUP = 'require_group'
 CMD_CREATE_DATASET = 'create_dataset'

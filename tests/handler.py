@@ -5,8 +5,8 @@ import unittest
 
 import msgpack
 import numpy as np
-from hurray.msgpack_ext import decode_np_array
-from hurray.protocol import (CMD_CREATE_DATABASE, CMD_CONNECT_DATABASE,
+from hurray.msgpack_ext import decode
+from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_KW_CMD, CMD_KW_DB, CMD_KW_ARGS, CMD_KW_STATUS,
                              CMD_CREATE_GROUP, CMD_KW_PATH, CMD_CREATE_DATASET,
                              CMD_KW_DATA, CMD_GET_NODE, NODE_TYPE_GROUP,
@@ -33,7 +33,7 @@ def unpack(data):
     :param data:
     :return:
     """
-    return msgpack.unpackb(data, object_hook=decode_np_array, use_list=False,
+    return msgpack.unpackb(data, object_hook=decode, use_list=False,
                            encoding='utf-8')
 
 
@@ -97,9 +97,9 @@ class RequestHandlerTestCase(unittest.TestCase):
         self.assertEqual(response[CMD_KW_STATUS], CREATED)
         self.assertTrue(os.path.isfile(os.path.join(self.test_dir, db_name)))
 
-    def test_connect_database(self):
+    def test_use_database(self):
         cmd = {
-            CMD_KW_CMD: CMD_CONNECT_DATABASE,
+            CMD_KW_CMD: CMD_USE_DATABASE,
         }
 
         response = unpack(handle_request(cmd))
@@ -174,7 +174,7 @@ class RequestHandlerTestCase(unittest.TestCase):
         self.create_grp(db_name, grp_name)
         self.create_ds(db_name, ds_name, data)
 
-        # group
+        # get group
         cmd = {
             CMD_KW_CMD: CMD_GET_NODE,
             CMD_KW_ARGS: {
@@ -186,13 +186,14 @@ class RequestHandlerTestCase(unittest.TestCase):
         response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], NODE_NOT_FOUND)
 
-        cmd[CMD_KW_ARGS][CMD_KW_PATH] = grp_name
+        cmd[CMD_KW_ARGS][CMD_KW_PATH] = grp_name  # now use existing group name
 
         response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
-        self.assertEqual(response[RESPONSE_NODE_TYPE], NODE_TYPE_GROUP)
+        self.assertEqual(response[CMD_KW_DATA][RESPONSE_NODE_TYPE],
+                         NODE_TYPE_GROUP)
 
-        # dataset
+        # get dataset
         cmd = {
             CMD_KW_CMD: CMD_GET_NODE,
             CMD_KW_ARGS: {
@@ -203,9 +204,12 @@ class RequestHandlerTestCase(unittest.TestCase):
 
         response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
-        self.assertEqual(response[RESPONSE_NODE_TYPE], NODE_TYPE_DATASET)
-        self.assertEqual(response[RESPONSE_NODE_SHAPE], data.shape)
-        self.assertEqual(response[RESPONSE_NODE_DTYPE], data.dtype)
+        self.assertEqual(response[CMD_KW_DATA][RESPONSE_NODE_TYPE],
+                         NODE_TYPE_DATASET)
+        self.assertEqual(response[CMD_KW_DATA][RESPONSE_NODE_SHAPE],
+                         data.shape)
+        self.assertEqual(response[CMD_KW_DATA][RESPONSE_NODE_DTYPE],
+                         data.dtype)
 
     def test_slice(self):
         db_name = 'test.h5'
@@ -338,17 +342,17 @@ class RequestHandlerTestCase(unittest.TestCase):
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = attr_key
         response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
-        self.assertEqual(response[RESPONSE_DATA], attr_data)
+        self.assertEqual(response[CMD_KW_DATA][RESPONSE_DATA], attr_data)
 
         cmd[CMD_KW_CMD] = CMD_ATTRIBUTES_CONTAINS
         response = unpack(handle_request(cmd))
 
         self.assertEqual(response[CMD_KW_STATUS], OK)
-        self.assertTrue(response[RESPONSE_ATTRS_CONTAINS])
+        self.assertTrue(response[CMD_KW_DATA][RESPONSE_ATTRS_CONTAINS])
 
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = 'invalid'
         response = unpack(handle_request(cmd))
-        self.assertFalse(response[RESPONSE_ATTRS_CONTAINS])
+        self.assertFalse(response[CMD_KW_DATA][RESPONSE_ATTRS_CONTAINS])
 
         cmd = {
             CMD_KW_CMD: CMD_ATTRIBUTES_KEYS,
@@ -359,4 +363,5 @@ class RequestHandlerTestCase(unittest.TestCase):
         }
 
         response = unpack(handle_request(cmd))
-        self.assertEqual(response[RESPONSE_ATTRS_KEYS], (attr_key,))
+        self.assertEqual(response[CMD_KW_DATA][RESPONSE_ATTRS_KEYS],
+                         (attr_key,))

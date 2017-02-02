@@ -58,12 +58,6 @@ define("processes", default=0, group='application',
        " on this machine)")
 define("debug", default=0, group='application',
        help="Write debug information to stdout?")
-define("redis_host", default="localhost", group='application',
-       help="Redis server host name")
-define("redis_port", default=6379, group='application',
-       help="Redis server port")
-define("redis_db", default=0, group='application',
-       help="Redis server db number")
 
 
 class HurrayServer(TCPServer):
