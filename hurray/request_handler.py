@@ -33,19 +33,16 @@ from .h5swmr import File, Group, Dataset
 from hurray.msgpack_ext import encode as encode_msgpack
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
-                             CMD_CREATE_DATASET, CMD_GET_NODE, CMD_GET_KEYS,
-                             CMD_GET_TREE,
+                             CMD_CREATE_DATASET, CMD_GET_FILESIZE,
+                             CMD_GET_NODE, CMD_GET_KEYS, CMD_GET_TREE,
                              CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
                              CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
                              CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
                              CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB,
                              CMD_KW_OVERWRITE, CMD_KW_PATH, CMD_KW_DATA,
-                             RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
-                             NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
-                             RESPONSE_NODE_DTYPE, CMD_KW_KEY,
-                             CMD_KW_STATUS, RESPONSE_ATTRS_CONTAINS,
-                             RESPONSE_ATTRS_KEYS, RESPONSE_NODE_KEYS,
-                             RESPONSE_NODE_TREE)
+                             CMD_KW_KEY, CMD_KW_STATUS,
+                             RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS,
+                             RESPONSE_NODE_KEYS, RESPONSE_NODE_TREE)
 from hurray.server.log import app_log
 from hurray.server.options import define, options
 from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
@@ -56,7 +53,8 @@ from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
 
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
-    CMD_USE_DATABASE
+    CMD_USE_DATABASE,
+    CMD_GET_FILESIZE,
 )
 
 NODE_COMMANDS = (CMD_CREATE_GROUP,
@@ -131,7 +129,7 @@ def handle_request(msg):
     status = OK
     data = None
 
-    if cmd in DATABASE_COMMANDS:  # Database related commands
+    if cmd in DATABASE_COMMANDS:  # file related commands
         # Database name has to be defined
         if CMD_KW_DB not in args:
             return response(MISSING_ARGUMENT)
@@ -149,6 +147,8 @@ def handle_request(msg):
         elif cmd == CMD_USE_DATABASE:
             if not db_exists(db):
                 status = FILE_NOT_FOUND
+        elif cmd == CMD_GET_FILESIZE:
+            data = File(db_path(db), "r").filesize
 
     elif cmd in NODE_COMMANDS:  # Node related commands
         # Database name and path have to be defined

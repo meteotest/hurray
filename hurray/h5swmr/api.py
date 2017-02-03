@@ -290,6 +290,14 @@ class File(Group):
     def __repr__(self):
         return "<HDF5 File ({0})>".format(self.file)
 
+    @property
+    @reader
+    def filesize(self):
+        """
+        Return size of the file in bytes
+        """
+        stat = os.stat(self.file)
+        return stat.st_size
 
 class Dataset(Node):
     """

@@ -43,6 +43,7 @@ CMD_CREATE_DATASET = 'create_dataset'
 CMD_GET_NODE = 'get_node'
 CMD_GET_KEYS = 'get_keys'
 CMD_GET_TREE = 'get_tree'
+CMD_GET_FILESIZE = 'get_filesize'
 CMD_SLICE_DATASET = 'slice_dataset'
 CMD_BROADCAST_DATASET = 'broadcast_dataset'
 
