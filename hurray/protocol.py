@@ -32,6 +32,7 @@ CMD_KW_DATA = 'data'
 CMD_KW_PATH = 'path'
 CMD_KW_KEY = 'key'
 CMD_KW_DB = 'db'
+CMD_KW_OVERWRITE = 'overwrite'
 CMD_KW_STATUS = 'status'
 
 CMD_CREATE_DATABASE = 'create_db'

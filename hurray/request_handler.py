@@ -38,8 +38,9 @@ from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
                              CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
                              CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
-                             CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB, CMD_KW_PATH,
-                             CMD_KW_DATA, RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
+                             CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB,
+                             CMD_KW_OVERWRITE, CMD_KW_PATH, CMD_KW_DATA,
+                             RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
                              NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
                              RESPONSE_NODE_DTYPE, CMD_KW_KEY,
                              CMD_KW_STATUS, RESPONSE_ATTRS_CONTAINS,
@@ -138,10 +139,12 @@ def handle_request(msg):
         if len(db) < 1:
             return response(INVALID_ARGUMENT)
         if cmd == CMD_CREATE_DATABASE:
-            if db_exists(db):
+            overwrite = args[CMD_KW_OVERWRITE]
+            if db_exists(db) and not overwrite:
                 status = FILE_EXISTS
             else:
-                File(db_path(db), 'w-')
+                flags = "w" if overwrite else "w-"
+                File(db_path(db), flags)
                 status = CREATED
         elif cmd == CMD_USE_DATABASE:
             if not db_exists(db):
