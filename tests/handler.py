@@ -6,17 +6,17 @@ import unittest
 import msgpack
 import numpy as np
 from hurray.msgpack_ext import decode
-from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
-                             CMD_KW_CMD, CMD_KW_DB, CMD_KW_ARGS, CMD_KW_STATUS,
-                             CMD_CREATE_GROUP, CMD_KW_PATH, CMD_CREATE_DATASET,
-                             CMD_KW_DATA, CMD_GET_NODE, NODE_TYPE_GROUP,
-                             RESPONSE_NODE_TYPE, NODE_TYPE_DATASET,
-                             RESPONSE_NODE_SHAPE, RESPONSE_NODE_DTYPE,
-                             CMD_SLICE_DATASET, CMD_KW_KEY, RESPONSE_DATA,
-                             CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_SET,
-                             CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_CONTAINS,
-                             RESPONSE_ATTRS_CONTAINS, CMD_ATTRIBUTES_KEYS,
-                             RESPONSE_ATTRS_KEYS)
+from hurray.protocol import (CMD_CREATE_DATABASE, CMD_KW_OVERWRITE,
+                             CMD_USE_DATABASE, CMD_KW_CMD, CMD_KW_DB,
+                             CMD_KW_ARGS, CMD_KW_STATUS, CMD_CREATE_GROUP,
+                             CMD_KW_PATH, CMD_CREATE_DATASET, CMD_KW_DATA,
+                             CMD_GET_NODE, NODE_TYPE_GROUP, RESPONSE_NODE_TYPE,
+                             NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
+                             RESPONSE_NODE_DTYPE, CMD_SLICE_DATASET,
+                             CMD_KW_KEY, RESPONSE_DATA, CMD_BROADCAST_DATASET,
+                             CMD_ATTRIBUTES_SET, CMD_ATTRIBUTES_GET,
+                             CMD_ATTRIBUTES_CONTAINS, RESPONSE_ATTRS_CONTAINS,
+                             CMD_ATTRIBUTES_KEYS, RESPONSE_ATTRS_KEYS)
 from hurray.request_handler import handle_request
 from hurray.server.options import options
 from hurray.status_codes import (UNKNOWN_COMMAND, MISSING_ARGUMENT, CREATED,
@@ -51,7 +51,10 @@ class RequestHandlerTestCase(unittest.TestCase):
     def create_db(self, name):
         cmd = {
             CMD_KW_CMD: CMD_CREATE_DATABASE,
-            CMD_KW_ARGS: {CMD_KW_DB: name}
+            CMD_KW_ARGS: {
+                CMD_KW_DB: name,
+                CMD_KW_OVERWRITE: False,
+            }
         }
         return unpack(handle_request(cmd))
 
@@ -342,7 +345,7 @@ class RequestHandlerTestCase(unittest.TestCase):
         cmd[CMD_KW_ARGS][CMD_KW_KEY] = attr_key
         response = unpack(handle_request(cmd))
         self.assertEqual(response[CMD_KW_STATUS], OK)
-        self.assertEqual(response[CMD_KW_DATA][RESPONSE_DATA], attr_data)
+        self.assertEqual(response[RESPONSE_DATA], attr_data)
 
         cmd[CMD_KW_CMD] = CMD_ATTRIBUTES_CONTAINS
         response = unpack(handle_request(cmd))
