@@ -33,14 +33,14 @@ from .h5swmr import File, Group, Dataset
 from hurray.msgpack_ext import encode as encode_msgpack
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
-                             CMD_CREATE_DATASET, CMD_GET_FILESIZE,
-                             CMD_GET_NODE, CMD_GET_KEYS, CMD_GET_TREE,
-                             CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
-                             CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
-                             CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
-                             CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB,
-                             CMD_KW_OVERWRITE, CMD_KW_PATH, CMD_KW_DATA,
-                             CMD_KW_KEY, CMD_KW_STATUS,
+                             CMD_CREATE_DATASET, CMD_REQUIRE_DATASET,
+                             CMD_GET_FILESIZE, CMD_GET_NODE, CMD_GET_KEYS,
+                             CMD_GET_TREE, CMD_SLICE_DATASET,
+                             CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_GET,
+                             CMD_ATTRIBUTES_SET, CMD_ATTRIBUTES_CONTAINS,
+                             CMD_ATTRIBUTES_KEYS, CMD_KW_CMD, CMD_KW_ARGS,
+                             CMD_KW_DB, CMD_KW_OVERWRITE, CMD_KW_PATH,
+                             CMD_KW_DATA, CMD_KW_KEY, CMD_KW_STATUS,
                              RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS,
                              RESPONSE_NODE_KEYS, RESPONSE_NODE_TREE)
 from hurray.server.log import app_log
@@ -48,7 +48,8 @@ from hurray.server.options import define, options
 from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
                                  NODE_NOT_FOUND, DATASET_EXISTS, VALUE_ERROR,
                                  TYPE_ERROR, CREATED, UNKNOWN_COMMAND,
-                                 MISSING_ARGUMENT, MISSING_DATA, KEY_ERROR,
+                                 MISSING_ARGUMENT, MISSING_DATA,
+                                 INCOMPATIBLE_DATA, KEY_ERROR,
                                  INVALID_ARGUMENT)
 
 DATABASE_COMMANDS = (
@@ -60,6 +61,7 @@ DATABASE_COMMANDS = (
 NODE_COMMANDS = (CMD_CREATE_GROUP,
                  CMD_REQUIRE_GROUP,
                  CMD_CREATE_DATASET,
+                 CMD_REQUIRE_DATASET,
                  CMD_GET_NODE,
                  CMD_GET_KEYS,
                  CMD_GET_TREE,
@@ -109,7 +111,7 @@ def response(status, data=None):
         resp["data"] = data
         # resp.update(data)
 
-    print("response: ", resp)
+    print("response (PID {}): {}".format(os.getpid(), resp))
 
     return msgpack.packb(resp, default=encode_msgpack, use_bin_type=True)
 
@@ -176,13 +178,27 @@ def handle_request(msg):
             db.require_group(path)
 
         elif cmd == CMD_CREATE_DATASET:
+            # TODO handle optional arguments
             if path in db:
                 status = DATASET_EXISTS
             else:
+                # TODO "data" should not be a mandatory parameter
                 if CMD_KW_DATA not in msg:
                     return response(MISSING_DATA)
                 dst = db.create_dataset(name=path, data=msg[CMD_KW_DATA])
                 data = dst
+
+        elif cmd == CMD_REQUIRE_DATASET:
+            kwargs = msg[CMD_KW_ARGS]
+
+            # TODO raises error => https://github.com/meteotest/hurray/issues/5
+
+            try:
+                dst = db.require_dataset(name=path, data=msg[CMD_KW_DATA],
+                                         **kwargs)
+            except TypeError:
+                return response(INCOMPATIBLE_DATA)
+            data = dst
 
         else:  # Commands for existing nodes
             if path not in db:

@@ -26,20 +26,25 @@
 MSG_LEN = 4
 PROTOCOL_VER = 1
 
+# command keywords
 CMD_KW_CMD = 'cmd'
 CMD_KW_ARGS = 'args'
 CMD_KW_DATA = 'data'
 CMD_KW_PATH = 'path'
+CMD_KW_SHAPE = 'shape'
+CMD_KW_DTYPE = 'dtype'
 CMD_KW_KEY = 'key'
 CMD_KW_DB = 'db'
 CMD_KW_OVERWRITE = 'overwrite'
 CMD_KW_STATUS = 'status'
 
+# commands
 CMD_CREATE_DATABASE = 'create_db'
 CMD_USE_DATABASE = 'use_db'
 CMD_CREATE_GROUP = 'create_group'
 CMD_REQUIRE_GROUP = 'require_group'
 CMD_CREATE_DATASET = 'create_dataset'
+CMD_REQUIRE_DATASET = 'require_dataset'
 CMD_GET_NODE = 'get_node'
 CMD_GET_KEYS = 'get_keys'
 CMD_GET_TREE = 'get_tree'
@@ -47,11 +52,13 @@ CMD_GET_FILESIZE = 'get_filesize'
 CMD_SLICE_DATASET = 'slice_dataset'
 CMD_BROADCAST_DATASET = 'broadcast_dataset'
 
+# attribute commands
 CMD_ATTRIBUTES_GET = 'attrs_getitem'
 CMD_ATTRIBUTES_SET = 'attrs_setitem'
 CMD_ATTRIBUTES_CONTAINS = 'attrs_contains'
 CMD_ATTRIBUTES_KEYS = 'attrs_keys'
 
+# response keywords etc.
 RESPONSE_NODE_TYPE = 'nodetype'
 RESPONSE_NODE_SHAPE = 'shape'
 RESPONSE_NODE_DTYPE = 'dtype'

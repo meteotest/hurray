@@ -299,6 +299,7 @@ class File(Group):
         stat = os.stat(self.file)
         return stat.st_size
 
+
 class Dataset(Node):
     """
     Wrapper for h5py.Dataset
