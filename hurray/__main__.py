@@ -64,6 +64,7 @@ class HurrayServer(TCPServer):
 
     @gen.coroutine
     def handle_stream(self, stream, address):
+        # this creates one worker process for each newly created connection
         pool = ProcessPoolExecutor(max_workers=1)
         while True:
             try:
