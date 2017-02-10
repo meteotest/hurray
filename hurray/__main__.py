@@ -25,12 +25,15 @@
 
 from __future__ import absolute_import
 
-import struct
 import logging
+import struct
 from concurrent.futures import ProcessPoolExecutor
 
 import msgpack
 
+from hurray.h5swmr.sync import clear_locks
+from hurray.msgpack_ext import decode, encode
+from hurray.request_handler import handle_request
 from hurray.server import gen
 from hurray.server.ioloop import IOLoop
 from hurray.server.iostream import StreamClosedError
@@ -39,9 +42,6 @@ from hurray.server.netutil import bind_unix_socket, bind_sockets
 from hurray.server.options import define, options
 from hurray.server.tcpserver import TCPServer
 from hurray.status_codes import INTERNAL_SERVER_ERROR
-from hurray.msgpack_ext import decode, encode
-from hurray.request_handler import handle_request
-from hurray.h5swmr.sync import clear_locks
 
 MSG_LEN = 4
 PROTOCOL_VER = 1
@@ -55,18 +55,19 @@ define("socket", default=None, group='application',
        help="Unix socket path")
 define("processes", default=0, group='application',
        help="Number of sub-processes (0 = detect the number of cores available"
-       " on this machine)")
+            " on this machine)")
 define("debug", default=0, group='application',
        help="Write debug information to stdout?")
 
 
 class HurrayServer(TCPServer):
-
     @gen.coroutine
     def handle_stream(self, stream, address):
+        stream.set_nodelay(True)
         pool = ProcessPoolExecutor(max_workers=1)
         while True:
             try:
+
                 # read protocol version
                 protocol_ver = yield stream.read_bytes(MSG_LEN)
                 protocol_ver = struct.unpack('>I', protocol_ver)[0]
@@ -91,12 +92,11 @@ class HurrayServer(TCPServer):
                         'status': INTERNAL_SERVER_ERROR,
                     }, default=encode)
 
-                yield stream.write(struct.pack('>I', PROTOCOL_VER))
-
+                rsp = struct.pack('>I', PROTOCOL_VER)
                 # Prefix each message with a 4-byte length (network byte order)
-                yield stream.write(struct.pack('>I', len(response)))
-
-                yield stream.write(response)
+                rsp += struct.pack('>I', len(response))
+                rsp += response
+                yield stream.write(rsp)
             except StreamClosedError:
                 app_log.info("Lost client at host %s", address)
                 break
