@@ -27,7 +27,7 @@
 
 from hurray.server.options import define
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 
 define("redis_host", default="localhost", group='application',

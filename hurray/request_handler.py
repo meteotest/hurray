@@ -33,34 +33,35 @@ from .h5swmr import File, Group, Dataset
 from hurray.msgpack_ext import encode as encode_msgpack
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
-                             CMD_CREATE_DATASET, CMD_GET_NODE, CMD_GET_KEYS,
-                             CMD_GET_TREE,
-                             CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
-                             CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
-                             CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
-                             CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB, CMD_KW_PATH,
-                             CMD_KW_DATA, RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
-                             NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
-                             RESPONSE_NODE_DTYPE, CMD_KW_KEY, RESPONSE_DATA,
-                             CMD_KW_STATUS, RESPONSE_ATTRS_CONTAINS,
-                             RESPONSE_ATTRS_KEYS, RESPONSE_NODE_KEYS,
-                             RESPONSE_NODE_TREE)
+                             CMD_CREATE_DATASET, CMD_REQUIRE_DATASET,
+                             CMD_GET_FILESIZE, CMD_GET_NODE, CMD_GET_KEYS,
+                             CMD_GET_TREE, CMD_SLICE_DATASET,
+                             CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_GET,
+                             CMD_ATTRIBUTES_SET, CMD_ATTRIBUTES_CONTAINS,
+                             CMD_ATTRIBUTES_KEYS, CMD_KW_CMD, CMD_KW_ARGS,
+                             CMD_KW_DB, CMD_KW_OVERWRITE, CMD_KW_PATH,
+                             CMD_KW_DATA, CMD_KW_KEY, CMD_KW_STATUS,
+                             RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS,
+                             RESPONSE_NODE_KEYS, RESPONSE_NODE_TREE)
 from hurray.server.log import app_log
 from hurray.server.options import define, options
 from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
                                  NODE_NOT_FOUND, DATASET_EXISTS, VALUE_ERROR,
                                  TYPE_ERROR, CREATED, UNKNOWN_COMMAND,
-                                 MISSING_ARGUMENT, MISSING_DATA, KEY_ERROR,
+                                 MISSING_ARGUMENT, MISSING_DATA,
+                                 INCOMPATIBLE_DATA, KEY_ERROR,
                                  INVALID_ARGUMENT)
 
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
-    CMD_USE_DATABASE
+    CMD_USE_DATABASE,
+    CMD_GET_FILESIZE,
 )
 
 NODE_COMMANDS = (CMD_CREATE_GROUP,
                  CMD_REQUIRE_GROUP,
                  CMD_CREATE_DATASET,
+                 CMD_REQUIRE_DATASET,
                  CMD_GET_NODE,
                  CMD_GET_KEYS,
                  CMD_GET_TREE,
@@ -110,7 +111,7 @@ def response(status, data=None):
         resp["data"] = data
         # resp.update(data)
 
-    print("response: ", resp)
+    print("response (PID {}): {}".format(os.getpid(), resp))
 
     return msgpack.packb(resp, default=encode_msgpack, use_bin_type=True)
 
@@ -130,7 +131,7 @@ def handle_request(msg):
     status = OK
     data = None
 
-    if cmd in DATABASE_COMMANDS:  # Database related commands
+    if cmd in DATABASE_COMMANDS:  # file related commands
         # Database name has to be defined
         if CMD_KW_DB not in args:
             return response(MISSING_ARGUMENT)
@@ -138,14 +139,18 @@ def handle_request(msg):
         if len(db) < 1:
             return response(INVALID_ARGUMENT)
         if cmd == CMD_CREATE_DATABASE:
-            if db_exists(db):
+            overwrite = args[CMD_KW_OVERWRITE]
+            if db_exists(db) and not overwrite:
                 status = FILE_EXISTS
             else:
-                File(db_path(db), 'w-')
+                flags = "w" if overwrite else "w-"
+                File(db_path(db), flags)
                 status = CREATED
         elif cmd == CMD_USE_DATABASE:
             if not db_exists(db):
                 status = FILE_NOT_FOUND
+        elif cmd == CMD_GET_FILESIZE:
+            data = File(db_path(db), "r").filesize
 
     elif cmd in NODE_COMMANDS:  # Node related commands
         # Database name and path have to be defined
@@ -171,17 +176,29 @@ def handle_request(msg):
 
         if cmd == CMD_REQUIRE_GROUP:
             db.require_group(path)
-            status = OK
 
         elif cmd == CMD_CREATE_DATASET:
+            # TODO handle optional arguments
             if path in db:
                 status = DATASET_EXISTS
             else:
+                # TODO "data" should not be a mandatory parameter
                 if CMD_KW_DATA not in msg:
                     return response(MISSING_DATA)
                 dst = db.create_dataset(name=path, data=msg[CMD_KW_DATA])
-                # TODO let the msgpack encoder encode Dataset objects!
                 data = dst
+
+        elif cmd == CMD_REQUIRE_DATASET:
+            kwargs = msg[CMD_KW_ARGS]
+
+            # TODO raises error => https://github.com/meteotest/hurray/issues/5
+
+            try:
+                dst = db.require_dataset(name=path, data=msg[CMD_KW_DATA],
+                                         **kwargs)
+            except TypeError:
+                return response(INCOMPATIBLE_DATA)
+            data = dst
 
         else:  # Commands for existing nodes
             if path not in db:
@@ -247,9 +264,7 @@ def handle_request(msg):
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
                 try:
-                    data = {
-                        RESPONSE_DATA: db[path].attrs[args[CMD_KW_KEY]]
-                    }
+                    data = db[path].attrs[args[CMD_KW_KEY]]
                 except KeyError as ke:
                     status = KEY_ERROR
                     app_log.debug('Invalid key: %s', ke)

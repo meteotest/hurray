@@ -64,6 +64,7 @@ class HurrayServer(TCPServer):
 
     @gen.coroutine
     def handle_stream(self, stream, address):
+        # this creates one worker process for each newly created connection
         pool = ProcessPoolExecutor(max_workers=1)
         while True:
             try:
@@ -130,6 +131,9 @@ def main():
         return
 
     clear_locks()
+    # Note that it does not make much sense to start >1 (master) processes
+    # because they implement an async event loop that creates worker processes
+    # itself.
     server.start(options.processes)
     server.add_sockets(sockets)
     IOLoop.current().start()
