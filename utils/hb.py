@@ -42,6 +42,8 @@ from proto import encode, decode, PROTOCOL_VER, CMD_KW_DB, CMD_KW_OVERWRITE, CMD
 MAX_SHAPE_SIZE = 850
 DS_PATH = '/myds'
 
+STATS = {'errors': 0, 'failed': 0, 'time': [], 'read': 0, 'write': 0, 'data': 0}
+
 
 def random_name(l):
     return ''.join(random.SystemRandom().choice(string.ascii_lowercase)
@@ -51,9 +53,9 @@ def random_name(l):
 def sizeof_fmt(num, suffix='B'):
     for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
         if abs(num) < 1000.0:
-            return "%3.1f %s%s" % (num, unit, suffix)
+            return '%3.1f %s%s' % (num, unit, suffix)
         num /= 1000.0
-    return "%.1f %s%s" % (num, 'Y', suffix)
+    return '%.1f %s%s' % (num, 'Y', suffix)
 
 
 def connect(host, port):
@@ -64,10 +66,10 @@ def connect(host, port):
     return Buffer(s)
 
 
-def exec(buffer, cmd, args, data=None):
+def send_recv(buffer, cmd, arguments, data=None):
     msg = msgpack.packb({
         CMD_KW_CMD: cmd,
-        CMD_KW_ARGS: args,
+        CMD_KW_ARGS: arguments,
         CMD_KW_DATA: data
     }, default=encode, use_bin_type=True)
 
@@ -84,7 +86,7 @@ def exec(buffer, cmd, args, data=None):
 
 def create_file(buffer):
     file_name = 'htest-' + random_name(5) + '.h5'
-    exec(buffer, CMD_CREATE_DATABASE, {
+    send_recv(buffer, CMD_CREATE_DATABASE, {
         CMD_KW_DB: file_name,
         CMD_KW_OVERWRITE: True,
     })
@@ -93,7 +95,7 @@ def create_file(buffer):
 
 
 def create_dataset(buffer, db, data):
-    exec(buffer, CMD_CREATE_DATASET, {
+    send_recv(buffer, CMD_CREATE_DATASET, {
         CMD_KW_PATH: DS_PATH,
         CMD_KW_DB: db
     }, data)
@@ -101,7 +103,7 @@ def create_dataset(buffer, db, data):
 
 
 def slice_dataset(buffer, db, key):
-    resp = exec(buffer, CMD_SLICE_DATASET, {
+    resp = send_recv(buffer, CMD_SLICE_DATASET, {
         CMD_KW_PATH: DS_PATH,
         CMD_KW_DB: db,
         CMD_KW_KEY: key
@@ -111,13 +113,19 @@ def slice_dataset(buffer, db, key):
 
 
 def broadcast_dataset(buffer, db, key, data):
-    resp = exec(buffer, CMD_BROADCAST_DATASET, {
+    resp = send_recv(buffer, CMD_BROADCAST_DATASET, {
         CMD_KW_PATH: DS_PATH,
         CMD_KW_DB: db,
         CMD_KW_KEY: key
     }, data)
     v_print(3, "Broadcasted dataset at '%s'" % DS_PATH)
     return resp
+
+
+def initialize_file(buffer):
+    file_name = create_file(buffer)
+    create_dataset(buffer, file_name, np.random.random((MAX_SHAPE_SIZE, MAX_SHAPE_SIZE)))
+    return file_name
 
 
 def worker(host, port, requests, file_name=None):
@@ -132,81 +140,81 @@ def worker(host, port, requests, file_name=None):
     """
     buffer = connect(host, port)
     if not file_name:
-        file_name = create_file(buffer)
-        create_dataset(buffer, file_name, np.random.random((MAX_SHAPE_SIZE, MAX_SHAPE_SIZE)))
-    stats = {"errors": 0, "time": [], "read": 0, "write": 0, 'data': 0}
+        file_name = initialize_file(buffer)
+    stats = STATS.copy()
     for request in range(requests):
-        start = random.randint(0, MAX_SHAPE_SIZE)
-        if start == MAX_SHAPE_SIZE:
-            start -= 1
-        end = random.randint(start + 1, MAX_SHAPE_SIZE)
-        s = slice(start, end)
-        if random.randint(0, 10) < 1:
-            st = time.perf_counter()
-            data = np.random.random((end - start, MAX_SHAPE_SIZE))
-            stats["data"] += data.nbytes
-            resp = broadcast_dataset(buffer, file_name, s, data)
-            stats["time"] += [time.perf_counter() - st]
+        start = random.randint(0, MAX_SHAPE_SIZE - 1)
+        sl = slice(start, random.randint(start + 1, MAX_SHAPE_SIZE))
+        st = time.perf_counter()
+        try:
+            if random.randint(0, 10) < 1:
+                data = np.random.random((sl.stop - sl.start, MAX_SHAPE_SIZE))
+                resp = broadcast_dataset(buffer, file_name, sl, data)
+                stats['write'] += 1
+                stats['data'] += data.nbytes
+            else:
+                resp = slice_dataset(buffer, file_name, sl)
+                stats['read'] += 1
+                stats['data'] += resp['data'].nbytes if 'data' in resp else 0
             if resp[CMD_KW_STATUS] >= 200:
-                stats["errors"] += 1
-            stats["write"] += 1
+                stats['errors'] += 1
+        except Exception:
+            stats['failed'] += 1
         else:
-            st = time.perf_counter()
-            resp = slice_dataset(buffer, file_name, s)
-            stats["data"] += resp["data"].nbytes
-            stats["time"] += [time.perf_counter() - st]
             if resp[CMD_KW_STATUS] >= 200:
-                stats["errors"] += 1
-            stats["read"] += 1
+                stats['errors'] += 1
+        stats['time'] += [time.perf_counter() - st]
+
     buffer.close()
     return stats
 
 
 def stress(host, port, requests, concurrency, multiple=False):
-    print("Benchmarking %s:%d (be patient)" % (host, port), end='', flush=True)
+    print('Benchmarking %s:%d (be patient)' % (host, port), end='', flush=True)
     file_name = None
     if not multiple:
         buffer = connect(host, port)
-        file_name = create_file(buffer)
-        create_dataset(buffer, file_name, np.random.random((MAX_SHAPE_SIZE, MAX_SHAPE_SIZE)))
+        file_name = initialize_file(buffer)
         buffer.close()
-    summary = {"errors": 0, "time": [], "read": 0, "write": 0, "data": 0}
+    summary = STATS.copy()
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
-        workers = [executor.submit(worker, host, port, requests, file_name) for w in range(concurrency)]
+        workers = [executor.submit(worker, host, port, requests, file_name) for _ in range(concurrency)]
         for future in concurrent.futures.as_completed(workers):
             stats = future.result()
             for k in summary.keys():
                 summary[k] += stats[k]
             print('.', end='', flush=True)
-    print("done\n")
+    print('done\n')
 
-    request = summary["read"] + summary["write"]
-    print("Concurrency Level:\t%d" % concurrency)
-    print("Time taken for tests:\t%.2f seconds" % sum(summary["time"]))
-    print("Complete requests:\t%d (%d read, %d write)" % (request, summary["read"], summary["write"]))
-    print("Failed requests:\t%d" % summary["errors"])
-    print("Total transferred:\t%s" % sizeof_fmt(summary["data"]))
-    print("Time per request:\t%.2f [ms] (mean)" % (np.mean(summary["time"]) * 1000))
+    request = summary['read'] + summary['write']
+    print('Concurrency Level:\t%d' % concurrency)
+    print('Time taken for tests:\t%.2f seconds' % sum(summary['time']))
+    print('Complete requests:\t%d (%d read, %d write)' % (request, summary['read'], summary['write']))
+    print('Failed requests:\t%d' % summary['failed'])
+    print('Non-1xx responses:\t%d' % summary['errors'])
+    print('Total transferred:\t%s' % sizeof_fmt(summary['data']))
+    print('Requests per second:\t%.2f [#/sec] (mean)' % (1 / np.mean(summary['time'])))
+    print('Time per request:\t%.2f [ms] (mean)' % (np.mean(summary['time']) * 1000))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import argparse
 
-    parser = argparse.ArgumentParser(description="Hurray server benchmarking tool")
+    parser = argparse.ArgumentParser(description='Hurray server benchmarking tool')
     parser.add_argument('host', metavar='hostname', type=str,
                         help='hostname')
     parser.add_argument('port', metavar='port', type=int,
                         help='port')
-    parser.add_argument("-n", metavar='requests', type=int, default=1,
-                        help="Number of requests to perform for the benchmarking session. "
-                             "The default is to just perform a single request which usually "
-                             "leads to non-representative bench‐marking results.")
-    parser.add_argument("-c", metavar='concurrency', type=int, default=1,
-                        help="Number of multiple requests to perform at a time. Default is one request at a time.")
-    parser.add_argument("-m", action='store_true', default=False,
-                        help="Create and use an individual file for each concurrent worker")
-    parser.add_argument("-v", metavar='level', type=int, default=0,
-                        help="How much troubleshooting info to print.")
+    parser.add_argument('-n', metavar='requests', type=int, default=1,
+                        help='Number of requests to perform for the benchmarking session. '
+                             'The default is to just perform a single request which usually '
+                             'leads to non-representative bench‐marking results.')
+    parser.add_argument('-c', metavar='concurrency', type=int, default=1,
+                        help='Number of multiple requests to perform at a time. Default is one request at a time.')
+    parser.add_argument('-m', action='store_true', default=False,
+                        help='Create and use an individual file for each concurrent worker')
+    parser.add_argument('-v', metavar='level', type=int, default=0,
+                        help='How much troubleshooting info to print.')
 
     args = parser.parse_args()
 
