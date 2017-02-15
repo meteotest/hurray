@@ -29,22 +29,20 @@ This reduces (but does not eliminate) potential damage. Clearly,
 programmers should make sure that clients do not exceed lock timeouts.
 """
 
+import contextlib
 import os
 import time
-import contextlib
 import uuid
 from functools import wraps
 
 import redis
 
-from ..server.options import options
 from .exithandler import handle_exit
+from ..server.options import options
 
-
-APPEND_SIGHANDLER = False
+APPEND_SIGHANDLER = True
 DEFAULT_TIMEOUT = 20  # seconds
 ACQ_TIMEOUT = 15
-
 
 PREFIX = "__hurray__"  # prefix for all lock/semaphore/counter names
 
@@ -54,7 +52,6 @@ PREFIX = "__hurray__"  # prefix for all lock/semaphore/counter names
 # => we use an identifier unique to all readers/writers.
 WRITELOCK_ID = '{}id_reader'.format(PREFIX)
 READLOCK_ID = '{}id_writer'.format(PREFIX)
-
 
 __redis_conn = None
 
@@ -181,7 +178,7 @@ def writer(f):
         r = '{}r__{}'.format(PREFIX, self.file)
         w = '{}w__{}'.format(PREFIX, self.file)
 
-        with handle_exit():
+        with handle_exit(append=APPEND_SIGHANDLER):
             writecount_val = None
             try:
                 # mutex2's purpose is to make writecount++ together with
@@ -277,7 +274,7 @@ def release_lock(conn, lockname, identifier):
                 return True
             else:
                 pipe.unwatch()
-                return False   # we lost the lock
+                return False  # we lost the lock
         except redis.exceptions.WatchError as e:
             raise e
 

@@ -26,8 +26,11 @@
 from __future__ import absolute_import
 
 import logging
+import signal
 import struct
+import time
 from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 
 import msgpack
 
@@ -36,6 +39,7 @@ from hurray.msgpack_ext import decode, encode
 from hurray.protocol import MSG_LEN, PROTOCOL_VER
 from hurray.request_handler import handle_request
 from hurray.server import gen
+from hurray.server import process
 from hurray.server.ioloop import IOLoop
 from hurray.server.iostream import StreamClosedError
 from hurray.server.log import app_log
@@ -121,6 +125,27 @@ class HurrayServer(TCPServer):
                 app_log.exception('Error while handling client connection')
 
 
+def sig_handler(server, sig, frame):
+    io_loop = IOLoop.instance()
+    tid = process.task_id() or 0
+
+    def stop_loop(deadline):
+        now = time.time()
+        if now < deadline and (io_loop._callbacks or io_loop._timeouts):
+            io_loop.add_timeout(now + 1, stop_loop, deadline)
+        else:
+            io_loop.stop()
+            server.shutdown_pool()
+            logging.info('Task %d shutdown complete' % tid)
+
+    def shutdown():
+        logging.info('Stopping hurray server task %d' % tid)
+        server.stop()
+        stop_loop(time.time() + SHUTDOWN_GRACE_PERIOD)
+
+    io_loop.add_callback_from_signal(shutdown)
+
+
 def main():
     options.parse_command_line()
 
@@ -146,6 +171,10 @@ def main():
         return
 
     clear_locks()
+
+    signal.signal(signal.SIGTERM, partial(sig_handler, server))
+    signal.signal(signal.SIGINT, partial(sig_handler, server))
+
     # Note that it does not make much sense to start >1 (master) processes
     # because they implement an async event loop that creates worker processes
     # itself.
