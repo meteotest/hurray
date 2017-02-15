@@ -203,9 +203,9 @@ if __name__ == "__main__":
                              "leads to non-representative bench‐marking results.")
     parser.add_argument("-c", metavar='concurrency', type=int, default=1,
                         help="Number of multiple requests to perform at a time. Default is one request at a time.")
-    parser.add_argument("-m", metavar='multiple', type=bool, default=False,
+    parser.add_argument("-m", action='store_true', default=False,
                         help="Create and use an individual file for each concurrent worker")
-    parser.add_argument("-v", metavar='verbosity', type=int, default=0,
+    parser.add_argument("-v", metavar='level', type=int, default=0,
                         help="How much troubleshooting info to print.")
 
     args = parser.parse_args()
@@ -216,4 +216,4 @@ if __name__ == "__main__":
             print(*a, **k)
 
 
-    stress(args.host, args.port, args.n, args.c)
+    stress(args.host, args.port, args.n, args.c, args.m)
