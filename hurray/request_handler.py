@@ -29,7 +29,6 @@ import os
 
 import msgpack
 
-from .h5swmr import File, Group, Dataset
 from hurray.msgpack_ext import encode as encode_msgpack
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
                              CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
@@ -51,6 +50,7 @@ from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
                                  MISSING_ARGUMENT, MISSING_DATA,
                                  INCOMPATIBLE_DATA, KEY_ERROR,
                                  INVALID_ARGUMENT)
+from .h5swmr import File, Group, Dataset
 
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
@@ -111,7 +111,7 @@ def response(status, data=None):
         resp["data"] = data
         # resp.update(data)
 
-    print("response (PID {}): {}".format(os.getpid(), resp))
+    # print("response (PID {}): {}".format(os.getpid(), resp))
 
     return msgpack.packb(resp, default=encode_msgpack, use_bin_type=True)
 
@@ -125,8 +125,7 @@ def handle_request(msg):
     cmd = msg.get(CMD_KW_CMD, None)
     args = msg.get(CMD_KW_ARGS, {})
 
-    app_log.debug('Process "%s" (%s)', cmd,
-                  ', '.join(['%s=%s' % (k, v) for k, v in args.items()]))
+    app_log.debug('Process "%s" (%s)', cmd, ', '.join(['%s=%s' % (k, v) for k, v in args.items()]))
 
     status = OK
     data = None
