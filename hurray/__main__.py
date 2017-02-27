@@ -26,15 +26,20 @@
 from __future__ import absolute_import
 
 import logging
+import signal
 import struct
+import time
 from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 
 import msgpack
 
 from hurray.h5swmr.sync import clear_locks
 from hurray.msgpack_ext import decode, encode
+from hurray.protocol import MSG_LEN, PROTOCOL_VER
 from hurray.request_handler import handle_request
 from hurray.server import gen
+from hurray.server import process
 from hurray.server.ioloop import IOLoop
 from hurray.server.iostream import StreamClosedError
 from hurray.server.log import app_log
@@ -43,8 +48,7 @@ from hurray.server.options import define, options
 from hurray.server.tcpserver import TCPServer
 from hurray.status_codes import INTERNAL_SERVER_ERROR
 
-MSG_LEN = 4
-PROTOCOL_VER = 1
+SHUTDOWN_GRACE_PERIOD = 30
 
 # command line arguments
 define("host", default='localhost', group='application',
@@ -56,19 +60,35 @@ define("socket", default=None, group='application',
 define("processes", default=0, group='application',
        help="Number of sub-processes (0 = detect the number of cores available"
             " on this machine)")
+define("workers", default=1, group='application',
+       help="Number of workers each sub-processes spawns")
 define("debug", default=0, group='application',
        help="Write debug information to stdout?")
 
 
 class HurrayServer(TCPServer):
+    def __init__(self, *args, **kwargs):
+        self.__workers = kwargs.pop('workers', 1)
+        # ProcessPoolExecutor can't be initialized here.
+        # The HurrayServer instances get forked and this leads to broken process pools.
+        self._pool = None
+        super(HurrayServer, self).__init__(*args, **kwargs)
+
+    @property
+    def pool(self):
+        if not self._pool:
+            self._pool = ProcessPoolExecutor(max_workers=self.__workers)
+        return self._pool
+
+    def shutdown_pool(self):
+        if self._pool:
+            self._pool.shutdown()
+
     @gen.coroutine
     def handle_stream(self, stream, address):
-        # this creates one worker process for each newly created connection
         stream.set_nodelay(True)
-        pool = ProcessPoolExecutor(max_workers=1)
         while True:
             try:
-
                 # read protocol version
                 protocol_ver = yield stream.read_bytes(MSG_LEN)
                 protocol_ver = struct.unpack('>I', protocol_ver)[0]
@@ -85,7 +105,7 @@ class HurrayServer(TCPServer):
                                       use_list=False, encoding='utf-8')
 
                 try:
-                    fut = pool.submit(handle_request, msg)
+                    fut = self.pool.submit(handle_request, msg)
                     response = yield fut
                 except Exception:
                     app_log.exception('Error in subprocess')
@@ -99,11 +119,31 @@ class HurrayServer(TCPServer):
                 rsp += response
                 yield stream.write(rsp)
             except StreamClosedError:
-                app_log.info("Lost client at host %s", address)
+                app_log.debug("Lost client at host %s", address)
                 break
             except Exception:
                 app_log.exception('Error while handling client connection')
-        pool.shutdown()
+
+
+def sig_handler(server, sig, frame):
+    io_loop = IOLoop.instance()
+    tid = process.task_id() or 0
+
+    def stop_loop(deadline):
+        now = time.time()
+        if now < deadline and (io_loop._callbacks or io_loop._timeouts):
+            io_loop.add_timeout(now + 1, stop_loop, deadline)
+        else:
+            io_loop.stop()
+            server.shutdown_pool()
+            logging.info('Task %d shutdown complete' % tid)
+
+    def shutdown():
+        logging.info('Stopping hurray server task %d' % tid)
+        server.stop()
+        stop_loop(time.time() + SHUTDOWN_GRACE_PERIOD)
+
+    io_loop.add_callback_from_signal(shutdown)
 
 
 def main():
@@ -114,7 +154,7 @@ def main():
         app_log.setLevel(logging.DEBUG)
         app_log.debug("debug mode")
 
-    server = HurrayServer()
+    server = HurrayServer(workers=options.workers)
 
     sockets = []
 
@@ -131,6 +171,10 @@ def main():
         return
 
     clear_locks()
+
+    signal.signal(signal.SIGTERM, partial(sig_handler, server))
+    signal.signal(signal.SIGINT, partial(sig_handler, server))
+
     # Note that it does not make much sense to start >1 (master) processes
     # because they implement an async event loop that creates worker processes
     # itself.
