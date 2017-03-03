@@ -32,10 +32,10 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+from multiprocessing.util import _exit_function
 
 import msgpack
 
-from hurray.h5swmr.sync import clear_locks
 from hurray.msgpack_ext import decode, encode
 from hurray.protocol import MSG_LEN, PROTOCOL_VER
 from hurray.request_handler import handle_request
@@ -183,8 +183,6 @@ def main():
         app_log.error('Define a socket and/or a port > 0')
         return
 
-    clear_locks()
-
     signal.signal(signal.SIGTERM, partial(sig_handler, server))
     signal.signal(signal.SIGINT, partial(sig_handler, server))
 
@@ -192,6 +190,12 @@ def main():
     # because they implement an async event loop that creates worker processes
     # itself.
     server.start(options.processes)
+
+    # deregister the multiprocessing exit handler for the forked children. Otherwise they try to join the
+    # shared (parent) process manager SWMRSyncManager.
+    import atexit
+    atexit.unregister(_exit_function)
+
     server.add_sockets(sockets)
     IOLoop.current().start()
 
