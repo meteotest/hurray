@@ -32,7 +32,7 @@ from inspect import isclass
 import numpy as np
 from numpy.lib.format import header_data_from_array_1_0
 
-from .h5swmr import Group, Dataset
+from .swmr import Group, Dataset
 from hurray.protocol import (RESPONSE_NODE_TYPE, NODE_TYPE_GROUP,
                              NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
                              RESPONSE_NODE_DTYPE, RESPONSE_NODE_PATH)

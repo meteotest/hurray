@@ -47,6 +47,7 @@ from hurray.server.netutil import bind_unix_socket, bind_sockets
 from hurray.server.options import define, options
 from hurray.server.tcpserver import TCPServer
 from hurray.status_codes import INTERNAL_SERVER_ERROR
+from hurray.swmr import SWMR_SYNC, LOCK_STRATEGY_NO_STARVE, LOCK_STRATEGY_WRITER_PREFERENCE
 
 SHUTDOWN_GRACE_PERIOD = 30
 
@@ -62,6 +63,8 @@ define("processes", default=0, group='application',
             " on this machine)")
 define("workers", default=1, group='application',
        help="Number of workers each sub-processes spawns")
+define("locking", default=LOCK_STRATEGY_WRITER_PREFERENCE, group='application',
+       help="File locking strategy:\nw = Writer preference\nn = No starving")
 define("debug", default=0, group='application',
        help="Write debug information to stdout?")
 
@@ -153,6 +156,8 @@ def main():
     if debug:
         app_log.setLevel(logging.DEBUG)
         app_log.debug("debug mode")
+
+    SWMR_SYNC.set_strategy(options.locking)
 
     server = HurrayServer(workers=options.workers)
 
