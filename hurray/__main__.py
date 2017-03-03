@@ -28,6 +28,7 @@ from __future__ import absolute_import
 import logging
 import signal
 import struct
+import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
@@ -44,10 +45,10 @@ from hurray.server.ioloop import IOLoop
 from hurray.server.iostream import StreamClosedError
 from hurray.server.log import app_log
 from hurray.server.netutil import bind_unix_socket, bind_sockets
-from hurray.server.options import define, options
+from hurray.server.options import define, options, parse_config_file
 from hurray.server.tcpserver import TCPServer
 from hurray.status_codes import INTERNAL_SERVER_ERROR
-from hurray.swmr import SWMR_SYNC, LOCK_STRATEGY_NO_STARVE, LOCK_STRATEGY_WRITER_PREFERENCE
+from hurray.swmr import SWMR_SYNC, LOCK_STRATEGY_WRITER_PREFERENCE
 
 SHUTDOWN_GRACE_PERIOD = 30
 
@@ -67,6 +68,8 @@ define("locking", default=LOCK_STRATEGY_WRITER_PREFERENCE, group='application',
        help="File locking strategy:\nw = Writer preference\nn = No starving")
 define("debug", default=0, group='application',
        help="Write debug information to stdout?")
+define("config", type=str, help="path to config file",
+       callback=lambda path: parse_config_file(path, final=False))
 
 
 class HurrayServer(TCPServer):
@@ -151,6 +154,11 @@ def sig_handler(server, sig, frame):
 
 def main():
     options.parse_command_line()
+
+    if len(sys.argv) == 1:
+        app_log.warning(
+            "Warning: no config file specified, using the default config. "
+            "In order to specify a config file use 'hurray --config=/path/to/hurray.conf'")
 
     debug = bool(options.debug)
     if debug:
