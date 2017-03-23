@@ -64,7 +64,7 @@ class SWMRSyncManager(BaseManager):
 
 SWMRSyncManager.register('SWMRSync', SWMRSync)
 
-
+# @TODO: DOC
 def start_sync_manager():
     manager = SWMRSyncManager()
     manager.start()

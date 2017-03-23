@@ -160,11 +160,6 @@ def main():
             "Warning: no config file specified, using the default config. "
             "In order to specify a config file use 'hurray --config=/path/to/hurray.conf'")
 
-    debug = bool(options.debug)
-    if debug:
-        app_log.setLevel(logging.DEBUG)
-        app_log.debug("debug mode")
-
     SWMR_SYNC.set_strategy(options.locking)
 
     server = HurrayServer(workers=options.workers)
