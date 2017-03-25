@@ -64,11 +64,19 @@ class SWMRSyncManager(BaseManager):
 
 SWMRSyncManager.register('SWMRSync', SWMRSync)
 
-# @TODO: DOC
+
 def start_sync_manager():
+    """
+    Start a server process which holds the SWMRSync object.
+    Other processes can manipulate (mainly acquire and release locks) it using a proxy 
+    :return: A SWMRSync proxy
+    """
     manager = SWMRSyncManager()
     manager.start()
     return manager.SWMRSync()
 
 
+# All forked children have to access SWMRSync object using the SWMR_SYNC proxy.
+# It is important that this module is imported before the child processes are forked
+# to ensure that the manager is started by the parent process.
 SWMR_SYNC = start_sync_manager()
