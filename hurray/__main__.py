@@ -28,13 +28,14 @@ from __future__ import absolute_import
 import logging
 import signal
 import struct
+import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+from multiprocessing.util import _exit_function
 
 import msgpack
 
-from hurray.h5swmr.sync import clear_locks
 from hurray.msgpack_ext import decode, encode
 from hurray.protocol import MSG_LEN, PROTOCOL_VER
 from hurray.request_handler import handle_request
@@ -44,9 +45,10 @@ from hurray.server.ioloop import IOLoop
 from hurray.server.iostream import StreamClosedError
 from hurray.server.log import app_log
 from hurray.server.netutil import bind_unix_socket, bind_sockets
-from hurray.server.options import define, options
+from hurray.server.options import define, options, parse_config_file
 from hurray.server.tcpserver import TCPServer
 from hurray.status_codes import INTERNAL_SERVER_ERROR
+from hurray.swmr import SWMR_SYNC, LOCK_STRATEGY_WRITER_PREFERENCE
 
 SHUTDOWN_GRACE_PERIOD = 30
 
@@ -62,8 +64,12 @@ define("processes", default=0, group='application',
             " on this machine)")
 define("workers", default=1, group='application',
        help="Number of workers each sub-processes spawns")
+define("locking", default=LOCK_STRATEGY_WRITER_PREFERENCE, group='application',
+       help="File locking strategy:\nw = Writer preference\nn = No starving")
 define("debug", default=0, group='application',
        help="Write debug information to stdout?")
+define("config", type=str, help="path to config file",
+       callback=lambda path: parse_config_file(path, final=False))
 
 
 class HurrayServer(TCPServer):
@@ -149,10 +155,12 @@ def sig_handler(server, sig, frame):
 def main():
     options.parse_command_line()
 
-    debug = bool(options.debug)
-    if debug:
-        app_log.setLevel(logging.DEBUG)
-        app_log.debug("debug mode")
+    if len(sys.argv) == 1:
+        app_log.warning(
+            "Warning: no config file specified, using the default config. "
+            "In order to specify a config file use 'hurray --config=/path/to/hurray.conf'")
+
+    SWMR_SYNC.set_strategy(options.locking)
 
     server = HurrayServer(workers=options.workers)
 
@@ -170,8 +178,6 @@ def main():
         app_log.error('Define a socket and/or a port > 0')
         return
 
-    clear_locks()
-
     signal.signal(signal.SIGTERM, partial(sig_handler, server))
     signal.signal(signal.SIGINT, partial(sig_handler, server))
 
@@ -179,6 +185,12 @@ def main():
     # because they implement an async event loop that creates worker processes
     # itself.
     server.start(options.processes)
+
+    # deregister the multiprocessing exit handler for the forked children. Otherwise they try to join the
+    # shared (parent) process manager SWMRSyncManager.
+    import atexit
+    atexit.unregister(_exit_function)
+
     server.add_sockets(sockets)
     IOLoop.current().start()
 

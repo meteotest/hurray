@@ -22,7 +22,22 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+Cross-process readers/writer synchronization.
 
-"""The hurray server and tools."""
+The following strategies are provided:
 
-__version__ = "0.0.3"
+- LOCK_STRATEGY_WRITER_PREFERENCE
+  no writer, once added to the queue, shall be kept waiting longer than absolutely necessary.
+
+- LOCK_STRATEGY_NO_STARVE
+  No process shall be allowed to starve.
+
+Note that the documented solutions work for threads accessing a shared resource.
+To get a working solution for process-based concurrency, one has to deal
+with (unexpected) process termination, which makes our solution slightly
+more involved.
+"""
+
+LOCK_STRATEGY_WRITER_PREFERENCE = 'w'
+LOCK_STRATEGY_NO_STARVE = 'n'

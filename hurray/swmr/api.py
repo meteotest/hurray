@@ -1,11 +1,30 @@
+# Copyright (c) 2016, Meteotest
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#    * Neither the name of Meteotest nor the
+#      names of its contributors may be used to endorse or promote products
+#      derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 Wrapper around h5py that synchronizes reading and writing of hdf5 files
 (parallel reading is possible, writing is serialized)
-
-Access to hdf5 files is synchronized by a solution to the readers/writers
-problem,
-cf. http://en.wikipedia.org/wiki/Readers%E2%80%93writers_problem
-#The_second_readers-writers_problem
 
 !!! IMPORTANT !!!
 Note that the locks used are not recursive/reentrant. Therefore, a synchronized
@@ -50,7 +69,7 @@ class Node(object):
 
         if key.startswith('/'):  # absolute path
             path = key
-        else:                    # relative path
+        else:  # relative path
             path = os.path.join(self.path, key)
 
         with h5py.File(self.file, 'r') as f:
@@ -203,7 +222,7 @@ class Group(Node):
 
         def buildtree(treenode):
             h5py_obj, children = treenode
-            assert(children == [])
+            assert (children == [])
             if isinstance(h5py_obj, h5py.Dataset):
                 # wrap h5py dataset object
                 treenode[0] = self._wrap_class(h5py_obj)
@@ -265,7 +284,6 @@ class File(Group):
 
         # call h5py.File() in case file needs to be created
         if mode in ("w", "w-", "x", "a"):
-
             self.file = name  # this is crucial for the @writer annotation
 
             @writer

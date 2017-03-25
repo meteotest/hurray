@@ -50,7 +50,7 @@ from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
                                  MISSING_ARGUMENT, MISSING_DATA,
                                  INCOMPATIBLE_DATA, KEY_ERROR,
                                  INVALID_ARGUMENT)
-from .h5swmr import File, Group, Dataset
+from .swmr import File, Group, Dataset
 
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
@@ -204,9 +204,8 @@ def handle_request(msg):
                 return response(NODE_NOT_FOUND)
 
             if cmd == CMD_GET_NODE:
-                node = db[path]
                 # let the msgpack encoder handle encoding of Groups/Datasets
-                data = node
+                data = db[path]
             elif cmd == CMD_GET_KEYS:
                 node = db[path]
                 if isinstance(node, Group):

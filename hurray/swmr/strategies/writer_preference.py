@@ -22,7 +22,61 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+The algorithm implemented is "Problem 2" in the following paper:
+http://cs.nyu.edu/~lerner/spring10/MCP-S10-Read04-ReadersWriters.pdf
+"""
 
-"""The hurray server and tools."""
+from multiprocessing import Semaphore
 
-__version__ = "0.0.3"
+_rw_locks = {}
+_locker = Semaphore(1)
+
+
+def _get_locks(name):
+    with _locker:
+        return _rw_locks.setdefault(name, {
+            'mutex1': Semaphore(1),
+            'mutex2': Semaphore(1),
+            'mutex3': Semaphore(1),
+            'r': Semaphore(1),
+            'w': Semaphore(1),
+            'rcnt': 0,
+            'wcnt': 0
+        })
+
+
+def start_read(name):
+    locks = _get_locks(name)
+    with locks['mutex3']:
+        with locks['r']:
+            with locks['mutex1']:
+                locks['rcnt'] += 1
+                if locks['rcnt'] == 1:
+                    locks['w'].acquire()
+
+
+def end_read(name):
+    locks = _get_locks(name)
+    with locks['mutex1']:
+        locks['rcnt'] -= 1
+        if locks['rcnt'] == 0:
+            locks['w'].release()
+
+
+def start_write(name):
+    locks = _get_locks(name)
+    with locks['mutex2']:
+        locks['wcnt'] += 1
+        if locks['wcnt'] == 1:
+            locks['r'].acquire()
+        locks['w'].acquire()
+
+
+def end_write(name):
+    locks = _get_locks(name)
+    locks['w'].release()
+    with locks['mutex2']:
+        locks['wcnt'] -= 1
+        if locks['wcnt'] == 0:
+            locks['r'].release()

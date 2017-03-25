@@ -22,7 +22,54 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+The third readers-writers problem
+https://www.rfc1149.net/blog/2011/01/07/the-third-readers-writers-problem/
+"""
 
-"""The hurray server and tools."""
+from multiprocessing import Semaphore
 
-__version__ = "0.0.3"
+_rw_locks = {}
+_locker = Semaphore(1)
+
+
+def _get_locks(name):
+    with _locker:
+        return _rw_locks.setdefault(name, {
+            'access': Semaphore(1),
+            'readers': Semaphore(1),
+            'order': Semaphore(1),
+            'rds': 0
+        })
+
+
+def start_read(name):
+    locks = _get_locks(name)
+    locks['order'].acquire()
+
+    locks['readers'].acquire()
+    if locks['rds'] == 0:
+        locks['access'].acquire()
+    locks['rds'] += 1
+
+    locks['order'].release()
+    locks['readers'].release()
+
+
+def end_read(name):
+    locks = _get_locks(name)
+    with locks['readers']:
+        locks['rds'] -= 1
+        if locks['rds'] == 0:
+            locks['access'].release()
+
+
+def start_write(name):
+    locks = _get_locks(name)
+    with locks['order']:
+        locks['access'].acquire()
+
+
+def end_write(name):
+    locks = _get_locks(name)
+    locks['access'].release()

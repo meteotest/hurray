@@ -23,6 +23,56 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-"""The hurray server and tools."""
+"""
+Simple function wrappers for read and write operations using the configured strategy.
+The acquisition of the read and write locks (start_read, start_write) as well as the read and write operation itself
+_must_ be wrapped with try/finally. Otherwise the corresponding locks cannot be decremented/released if
+program execution ends, e.g., while performing a read or write operation (because of a SIGTERM signal, for example).
+"""
 
-__version__ = "0.0.3"
+from functools import wraps
+
+from .exithandler import handle_exit
+from .lock import SWMR_SYNC
+
+
+def reader(f):
+    """
+    Decorates methods reading a shared resource
+    """
+
+    @wraps(f)
+    def func_wrapper(self, *args, **kwargs):
+        """
+        Wraps reading functions.
+        """
+        with handle_exit(append=True):
+            try:
+                SWMR_SYNC.start_read(self.file)
+                result = f(self, *args, **kwargs)  # critical section
+                return result
+            finally:
+                SWMR_SYNC.end_read(self.file)
+
+    return func_wrapper
+
+
+def writer(f):
+    """
+    Decorates methods writing to a shared resource
+    """
+
+    @wraps(f)
+    def func_wrapper(self, *args, **kwargs):
+        """
+        Wraps writing functions.
+        """
+        with handle_exit(append=True):
+            try:
+                SWMR_SYNC.start_write(self.file)
+                return_val = f(self, *args, **kwargs)
+                return return_val
+            finally:
+                SWMR_SYNC.end_write(self.file)
+
+    return func_wrapper

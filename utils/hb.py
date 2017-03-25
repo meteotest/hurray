@@ -147,6 +147,7 @@ def worker(host, port, requests, file_name=None):
         sl = slice(start, random.randint(start + 1, MAX_SHAPE_SIZE))
         st = time.perf_counter()
         try:
+            # 10% write operations
             if random.randint(0, 10) < 1:
                 data = np.random.random((sl.stop - sl.start, MAX_SHAPE_SIZE))
                 resp = broadcast_dataset(buffer, file_name, sl, data)

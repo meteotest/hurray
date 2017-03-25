@@ -22,7 +22,14 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+A drop-in replacement for the h5py library. Allows "single write multiple
+read" (SWMR) access to hdf5 files.
+"""
 
-"""The hurray server and tools."""
+from .api import File, Node, Dataset, Group
+from .lock import SWMR_SYNC
+from .strategies import LOCK_STRATEGY_NO_STARVE, LOCK_STRATEGY_WRITER_PREFERENCE
 
-__version__ = "0.0.3"
+__all__ = ["File", "Node", "Dataset", "Group", "SWMR_SYNC", "LOCK_STRATEGY_NO_STARVE",
+           "LOCK_STRATEGY_WRITER_PREFERENCE"]
