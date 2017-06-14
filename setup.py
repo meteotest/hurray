@@ -54,8 +54,6 @@ if setuptools is not None:
         "dev": [
             "sphinx==1.6.1",
             "sphinx-rtd-theme==0.2.4",
-            "ipython==6.0.0",
-            "ipdb==0.10.3",
         ],
     }
     if sys.version_info < (3, 5):
