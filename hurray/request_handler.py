@@ -146,7 +146,11 @@ def handle_request(msg):
                 status = FILE_EXISTS
             else:
                 flags = "w" if overwrite else "w-"
-                File(db_path(db), flags)
+                filepath = db_path(db)
+                # create sub-directories (if any)
+                # note that db_path() guarantees that this is safe
+                os.makedirs(os.path.split(filepath)[0], exist_ok=True)
+                File(filepath, flags)
                 status = CREATED
         elif cmd == CMD_USE_DATABASE:
             if not db_exists(db):
