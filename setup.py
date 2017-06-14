@@ -50,23 +50,18 @@ if setuptools is not None:
         'msgpack-python==0.4.8',
         'h5py==2.6'
     ]
-
-    if sys.version_info < (2, 7):
-        # Only needed indirectly, for singledispatch.
-        install_requires.append('ordereddict')
-    if sys.version_info < (2, 7, 9):
-        install_requires.append('backports.ssl_match_hostname')
-    if sys.version_info < (3, 2):
-        install_requires.append('futures')
-    if sys.version_info < (3, 4):
-        install_requires.append('singledispatch')
-        # Certifi is also optional on 2.7.9+, although making our dependencies
-        # conditional on micro version numbers seems like a bad idea
-        # until we have more declarative metadata.
-        install_requires.append('certifi')
+    extras_require = {
+        "dev": [
+            "sphinx==1.6.1",
+            "sphinx-rtd-theme==0.2.4",
+            "ipython==6.0.0",
+            "ipdb==0.10.3",
+        ],
+    }
     if sys.version_info < (3, 5):
         install_requires.append('backports_abc>=0.4')
     kwargs['install_requires'] = install_requires
+    kwargs['extras_require'] = extras_require
 
 setup(
     name="hurray",
@@ -84,11 +79,10 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
     ],
     test_suite='tests.get_tests',
     entry_points={

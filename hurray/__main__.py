@@ -23,8 +23,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import absolute_import
-
 import logging
 import signal
 import struct
@@ -76,7 +74,8 @@ class HurrayServer(TCPServer):
     def __init__(self, *args, **kwargs):
         self.__workers = kwargs.pop('workers', 1)
         # ProcessPoolExecutor can't be initialized here.
-        # The HurrayServer instances get forked and this leads to broken process pools.
+        # The HurrayServer instances get forked and this leads to broken
+        # process pools.
         self._pool = None
         super(HurrayServer, self).__init__(*args, **kwargs)
 
@@ -158,7 +157,8 @@ def main():
     if len(sys.argv) == 1:
         app_log.warning(
             "Warning: no config file specified, using the default config. "
-            "In order to specify a config file use 'hurray --config=/path/to/hurray.conf'")
+            "In order to specify a config file use "
+            "'hurray --config=/path/to/hurray.conf'")
 
     SWMR_SYNC.set_strategy(options.locking)
 
@@ -186,8 +186,9 @@ def main():
     # itself.
     server.start(options.processes)
 
-    # deregister the multiprocessing exit handler for the forked children. Otherwise they try to join the
-    # shared (parent) process manager SWMRSyncManager.
+    # deregister the multiprocessing exit handler for the forked children.
+    # Otherwise they try to join the shared (parent) process manager
+    # SWMRSyncManager.
     import atexit
     atexit.unregister(_exit_function)
 

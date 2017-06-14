@@ -23,8 +23,6 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import absolute_import
-
 import os
 
 import msgpack
@@ -82,8 +80,8 @@ def db_path(database):
     :param database: Name of database file
     :return: Absolute path
     """
-    absbase =  os.path.abspath(options.base)
-    abspath =  os.path.abspath(os.path.join(absbase, database or ''))
+    absbase = os.path.abspath(options.base)
+    abspath = os.path.abspath(os.path.join(absbase, database or ''))
     if not abspath.startswith(absbase):
         raise ValueError("path outside base, please only relative paths")
     return abspath
@@ -127,7 +125,8 @@ def handle_request(msg):
     cmd = msg.get(CMD_KW_CMD, None)
     args = msg.get(CMD_KW_ARGS, {})
 
-    app_log.debug('Process "%s" (%s)', cmd, ', '.join(['%s=%s' % (k, v) for k, v in args.items()]))
+    app_log.debug('Process "%s" (%s)', cmd,
+                  ', '.join(['%s=%s' % (k, v) for k, v in args.items()]))
 
     status = OK
     data = None
