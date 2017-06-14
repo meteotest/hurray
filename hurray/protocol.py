@@ -23,6 +23,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# note that the hurray server and the client contain the same file
+
 MSG_LEN = 4
 PROTOCOL_VER = 1
 
@@ -59,6 +61,7 @@ CMD_ATTRIBUTES_CONTAINS = 'attrs_contains'
 CMD_ATTRIBUTES_KEYS = 'attrs_keys'
 
 # response keywords etc.
+RESPONSE_H5FILE = 'h5file'
 RESPONSE_NODE_TYPE = 'nodetype'
 RESPONSE_NODE_SHAPE = 'shape'
 RESPONSE_NODE_DTYPE = 'dtype'
