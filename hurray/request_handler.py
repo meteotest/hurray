@@ -70,21 +70,23 @@ NODE_COMMANDS = (CMD_CREATE_GROUP,
                  CMD_ATTRIBUTES_CONTAINS,
                  CMD_ATTRIBUTES_KEYS)
 
-define('base', default='.', group='application',
-       help="Database files location")
+define('base', default='~/hurray_data/', group='application',
+       help="Location of hdf5 files")
 
 
 def db_path(database):
     """
     Return the absolute path of the database based on the "base" option
-    :param database: Name of database file
-    :return: Absolute path
+    :param database: Name of hdf5 file
+    :return: Absolute path of hdf5 file
     """
-    absbase = os.path.abspath(options.base)
-    abspath = os.path.abspath(os.path.join(absbase, database or ''))
-    if not abspath.startswith(absbase):
-        raise ValueError("path outside base, please only relative paths")
-    return abspath
+    absbase = os.path.abspath(os.path.expanduser(options.base))
+    absfilepath = os.path.abspath(os.path.join(absbase, database))
+    if not absfilepath.startswith(absbase):
+        raise ValueError("File {} is not under base directory {}"
+                         .format(absfilepath, absbase))
+
+    return absfilepath
 
 
 def db_exists(database):

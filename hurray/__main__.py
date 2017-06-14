@@ -23,6 +23,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import logging
 import signal
 import struct
@@ -159,6 +160,13 @@ def main():
             "Warning: no config file specified, using the default config. "
             "In order to specify a config file use "
             "'hurray --config=/path/to/hurray.conf'")
+
+    # check if base directory exists and is writable (TODO)
+    absbase = os.path.abspath(os.path.expanduser(options.base))
+    if not os.access(absbase, os.W_OK):
+        app_log.error("base directory {} does not exist or is not writable!"
+                      .format(absbase))
+        sys.exit(1)
 
     SWMR_SYNC.set_strategy(options.locking)
 
