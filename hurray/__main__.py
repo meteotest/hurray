@@ -123,6 +123,7 @@ class HurrayServer(TCPServer):
                 # Prefix each message with a 4-byte length (network byte order)
                 rsp += struct.pack('>I', len(response))
                 rsp += response
+                app_log.debug("Sending: {} bytes ...".format(len(rsp)))
                 yield stream.write(rsp)
             except StreamClosedError:
                 app_log.debug("Lost client at host %s", address)

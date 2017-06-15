@@ -29,6 +29,7 @@ import msgpack
 
 from hurray.msgpack_ext import encode as encode_msgpack
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_RENAME_DATABASE,
+                             CMD_DELETE_DATABASE,
                              CMD_USE_DATABASE, CMD_CREATE_GROUP,
                              CMD_REQUIRE_GROUP, CMD_CREATE_DATASET,
                              CMD_REQUIRE_DATASET, CMD_GET_FILESIZE,
@@ -54,6 +55,7 @@ from .swmr import File, Group, Dataset
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
     CMD_RENAME_DATABASE,
+    CMD_DELETE_DATABASE,
     CMD_USE_DATABASE,
     CMD_GET_FILESIZE,
 )
@@ -98,7 +100,7 @@ def db_exists(database):
     :return:
     """
     path = db_path(database)
-    app_log.debug('Check database %s', path)
+    app_log.debug('Checking if {} exists'.format(path))
     return os.path.isfile(path)
 
 
@@ -149,6 +151,7 @@ def handle_request(msg):
             else:
                 flags = "w" if overwrite else "w-"
                 filepath = db_path(db)
+                app_log.debug("Creating {} ...".format(filepath))
                 # create sub-directories (if any)
                 # note that db_path() guarantees that this is safe
                 os.makedirs(os.path.split(filepath)[0], exist_ok=True)
@@ -162,6 +165,12 @@ def handle_request(msg):
                 filepath_new = db_path(args[CMD_KW_DB_RENAMETO])
                 f.rename(filepath_new)
                 data = f
+        elif cmd == CMD_DELETE_DATABASE:
+            if not db_exists(db):
+                status = FILE_NOT_FOUND
+            else:
+                f = File(db_path(db), "w")
+                f.delete()
         elif cmd == CMD_USE_DATABASE:
             if not db_exists(db):
                 status = FILE_NOT_FOUND

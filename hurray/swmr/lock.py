@@ -23,13 +23,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
-A server process manager providing different locking strategies to processes accessing a shared resource.
-See strategies for concrete implementations.
+A server process manager providing different locking strategies to processes
+accessing a shared resource.  See strategies for concrete implementations.
 """
 
 from multiprocessing.managers import BaseManager
 
-from .strategies import no_starve, writer_preference, LOCK_STRATEGY_NO_STARVE, LOCK_STRATEGY_WRITER_PREFERENCE
+from .strategies import (no_starve, writer_preference, LOCK_STRATEGY_NO_STARVE,
+                         LOCK_STRATEGY_WRITER_PREFERENCE)
 
 
 class SWMRSync(object):
@@ -68,7 +69,8 @@ SWMRSyncManager.register('SWMRSync', SWMRSync)
 def start_sync_manager():
     """
     Start a server process which holds the SWMRSync object.
-    Other processes can manipulate (mainly acquire and release locks) it using a proxy 
+    Other processes can manipulate (mainly acquire and release locks) it using
+    a proxy
     :return: A SWMRSync proxy
     """
     manager = SWMRSyncManager()
@@ -77,6 +79,6 @@ def start_sync_manager():
 
 
 # All forked children have to access SWMRSync object using the SWMR_SYNC proxy.
-# It is important that this module is imported before the child processes are forked
-# to ensure that the manager is started by the parent process.
+# It is important that this module is imported before the child processes are
+# forked to ensure that the manager is started by the parent process.
 SWMR_SYNC = start_sync_manager()

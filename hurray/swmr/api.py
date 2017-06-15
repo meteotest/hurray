@@ -37,6 +37,7 @@ import os
 import h5py
 
 from .sync import reader, writer
+from hurray.server.log import app_log
 
 
 class Node(object):
@@ -281,6 +282,7 @@ class File(Group):
         """
         try to open/create an h5py.File object
         """
+        app_log.debug("XXX {},{} ...".format(name, mode))
 
         # call h5py.File() in case file needs to be created
         if mode in ("w", "w-", "x", "a"):
@@ -288,6 +290,7 @@ class File(Group):
 
             @writer
             def init(self):
+                print("------- calling File.__init__({})".format(name))
                 with h5py.File(name=name, mode=mode, *args, **kwargs):
                     pass
 
@@ -326,15 +329,17 @@ class File(Group):
             new: new filename
         """
         os.rename(self.file, new)
-        self.file = new
+        # TODO this causes problems because self.file is used by @writer
+        # self.file = new
 
     @writer
-    def remove(self):
+    def delete(self):
         """
         Remove hdf5 file
         """
-        # TODO
-        raise NotImplementedError()
+        os.remove(self.file)
+        # TODO this causes problems because self.file is used by @writer
+        # self.file = None
 
 
 class Dataset(Node):

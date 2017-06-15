@@ -44,6 +44,7 @@ CMD_KW_STATUS = 'status'
 # commands
 CMD_CREATE_DATABASE = 'create_db'
 CMD_RENAME_DATABASE = 'rename_db'
+CMD_DELETE_DATABASE = 'delete_db'
 CMD_USE_DATABASE = 'use_db'
 CMD_CREATE_GROUP = 'create_group'
 CMD_REQUIRE_GROUP = 'require_group'

@@ -24,10 +24,12 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
-Simple function wrappers for read and write operations using the configured strategy.
-The acquisition of the read and write locks (start_read, start_write) as well as the read and write operation itself
-_must_ be wrapped with try/finally. Otherwise the corresponding locks cannot be decremented/released if
-program execution ends, e.g., while performing a read or write operation (because of a SIGTERM signal, for example).
+Simple function wrappers for read and write operations using the configured
+strategy.  The acquisition of the read and write locks (start_read,
+start_write) as well as the read and write operation itself _must_ be wrapped
+with try/finally. Otherwise the corresponding locks cannot be
+decremented/released if program execution ends, e.g., while performing a read
+or write operation (because of a SIGTERM signal, for example).
 """
 
 from functools import wraps
