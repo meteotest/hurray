@@ -317,6 +317,25 @@ class File(Group):
         stat = os.stat(self.file)
         return stat.st_size
 
+    @writer
+    def rename(self, new):
+        """
+        Rename hdf5 file
+
+        Args:
+            new: new filename
+        """
+        os.rename(self.file, new)
+        self.file = new
+
+    @writer
+    def remove(self):
+        """
+        Remove hdf5 file
+        """
+        # TODO
+        raise NotImplementedError()
+
 
 class Dataset(Node):
     """

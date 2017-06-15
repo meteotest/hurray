@@ -28,15 +28,16 @@ import os
 import msgpack
 
 from hurray.msgpack_ext import encode as encode_msgpack
-from hurray.protocol import (CMD_CREATE_DATABASE, CMD_USE_DATABASE,
-                             CMD_CREATE_GROUP, CMD_REQUIRE_GROUP,
-                             CMD_CREATE_DATASET, CMD_REQUIRE_DATASET,
-                             CMD_GET_FILESIZE, CMD_GET_NODE, CMD_GET_KEYS,
-                             CMD_GET_TREE, CMD_SLICE_DATASET,
-                             CMD_BROADCAST_DATASET, CMD_ATTRIBUTES_GET,
-                             CMD_ATTRIBUTES_SET, CMD_ATTRIBUTES_CONTAINS,
-                             CMD_ATTRIBUTES_KEYS, CMD_KW_CMD, CMD_KW_ARGS,
-                             CMD_KW_DB, CMD_KW_OVERWRITE, CMD_KW_PATH,
+from hurray.protocol import (CMD_CREATE_DATABASE, CMD_RENAME_DATABASE,
+                             CMD_USE_DATABASE, CMD_CREATE_GROUP,
+                             CMD_REQUIRE_GROUP, CMD_CREATE_DATASET,
+                             CMD_REQUIRE_DATASET, CMD_GET_FILESIZE,
+                             CMD_GET_NODE, CMD_GET_KEYS, CMD_GET_TREE,
+                             CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
+                             CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
+                             CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
+                             CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB,
+                             CMD_KW_DB_RENAMETO, CMD_KW_OVERWRITE, CMD_KW_PATH,
                              CMD_KW_DATA, CMD_KW_KEY, CMD_KW_STATUS,
                              RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS,
                              RESPONSE_NODE_KEYS, RESPONSE_NODE_TREE)
@@ -52,6 +53,7 @@ from .swmr import File, Group, Dataset
 
 DATABASE_COMMANDS = (
     CMD_CREATE_DATABASE,
+    CMD_RENAME_DATABASE,
     CMD_USE_DATABASE,
     CMD_GET_FILESIZE,
 )
@@ -152,6 +154,14 @@ def handle_request(msg):
                 os.makedirs(os.path.split(filepath)[0], exist_ok=True)
                 File(filepath, flags)
                 status = CREATED
+        elif cmd == CMD_RENAME_DATABASE:
+            if not db_exists(db):
+                status = FILE_NOT_FOUND
+            else:
+                f = File(db_path(db), "w")
+                filepath_new = db_path(args[CMD_KW_DB_RENAMETO])
+                f.rename(filepath_new)
+                data = f
         elif cmd == CMD_USE_DATABASE:
             if not db_exists(db):
                 status = FILE_NOT_FOUND

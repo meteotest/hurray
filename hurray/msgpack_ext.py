@@ -32,11 +32,11 @@ from inspect import isclass
 import numpy as np
 from numpy.lib.format import header_data_from_array_1_0
 
-from .swmr import Group, Dataset
+from .swmr import File, Group, Dataset
 from hurray.protocol import (RESPONSE_H5FILE, RESPONSE_NODE_TYPE,
-                             NODE_TYPE_GROUP, NODE_TYPE_DATASET,
-                             RESPONSE_NODE_SHAPE, RESPONSE_NODE_DTYPE,
-                             RESPONSE_NODE_PATH)
+                             NODE_TYPE_FILE, NODE_TYPE_GROUP,
+                             NODE_TYPE_DATASET, RESPONSE_NODE_SHAPE,
+                             RESPONSE_NODE_DTYPE, RESPONSE_NODE_PATH)
 
 
 def encode(obj):
@@ -63,6 +63,13 @@ def encode(obj):
     elif isinstance(obj, np.number):
         # convert to Python scalar
         return np.asscalar(obj)
+    elif isinstance(obj, File):
+        data = {
+            RESPONSE_H5FILE: obj.file,
+            RESPONSE_NODE_TYPE: NODE_TYPE_FILE,
+            RESPONSE_NODE_PATH: obj.path,
+        }
+        return data
     elif isinstance(obj, Group):
         # TODO include attrs?
         data = {
