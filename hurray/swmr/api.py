@@ -39,6 +39,9 @@ import h5py
 from .sync import reader, writer
 from hurray.server.log import app_log
 
+# TODO Note that self.file must never be (accidentally) modified because the
+# whole @reader/@writer synchronization relies on it!
+
 
 class Node(object):
     """
@@ -329,8 +332,6 @@ class File(Group):
             new: new filename
         """
         os.rename(self.file, new)
-        # TODO this causes problems because self.file is used by @writer
-        # self.file = new
 
     @writer
     def delete(self):
@@ -338,8 +339,6 @@ class File(Group):
         Remove hdf5 file
         """
         os.remove(self.file)
-        # TODO this causes problems because self.file is used by @writer
-        # self.file = None
 
 
 class Dataset(Node):
