@@ -33,8 +33,16 @@ CMD_KW_CMD = 'cmd'
 CMD_KW_ARGS = 'args'
 CMD_KW_DATA = 'data'
 CMD_KW_PATH = 'path'
+
+# note that these are kwargs that are passed 1:1 to h5py (don't rename!)
 CMD_KW_SHAPE = 'shape'
 CMD_KW_DTYPE = 'dtype'
+CMD_KW_COMPRESSION = 'compression'
+CMD_KW_COMPRESSION_OPTS = 'compression_opts'
+CMD_KW_CHUNKS = 'chunks'
+CMD_KW_FILLVALUE = 'fillvalue'
+CMD_KW_REQUIRE_EXACT = 'exact'
+
 CMD_KW_KEY = 'key'
 CMD_KW_DB = 'db'
 CMD_KW_DB_RENAMETO = 'db_new_name'

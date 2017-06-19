@@ -41,6 +41,9 @@ from hurray.protocol import (CMD_CREATE_DATABASE, CMD_RENAME_DATABASE,
                              CMD_KW_DB_RENAMETO, CMD_KW_OVERWRITE, CMD_KW_PATH,
                              CMD_KW_DATA, CMD_KW_KEY, CMD_KW_STATUS,
                              CMD_KW_SHAPE, CMD_KW_DTYPE,
+                             CMD_KW_REQUIRE_EXACT,
+                             CMD_KW_CHUNKS, CMD_KW_FILLVALUE,
+                             CMD_KW_COMPRESSION, CMD_KW_COMPRESSION_OPTS,
                              RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS,
                              RESPONSE_NODE_KEYS, RESPONSE_NODE_TREE)
 from hurray.server.log import app_log
@@ -164,11 +167,11 @@ def handle_request(msg):
             if not db_exists(db):
                 status = FILE_NOT_FOUND
             else:
-                f = File(db_path(db), "w")
+                f = File(db_path(db), "r")
                 filepath_new = db_path(args[CMD_KW_DB_RENAMETO])
                 f.rename(filepath_new)
                 # we cannot return f because rename() is not "in place"
-                f_renamed = File(filepath_new)
+                f_renamed = File(filepath_new, "r")
                 data_response = f_renamed
         elif cmd == CMD_DELETE_DATABASE:
             if not db_exists(db):
@@ -211,14 +214,15 @@ def handle_request(msg):
             if path in db:
                 status = DATASET_EXISTS
             else:
-                # shape=None, dtype=None, data=None
-                shape = args.get(CMD_KW_SHAPE, None)
-                dtype = args.get(CMD_KW_DTYPE, None)
+                avail_kwargs = [CMD_KW_SHAPE, CMD_KW_DTYPE, CMD_KW_CHUNKS,
+                                CMD_KW_COMPRESSION, CMD_KW_COMPRESSION_OPTS,
+                                CMD_KW_FILLVALUE]
+                kwargs = {kw: args[kw] for kw in avail_kwargs if kw in args}
                 try:
-                    dst = db.create_dataset(name=path, data=data, shape=shape,
-                                            dtype=dtype)
+                    dst = db.create_dataset(name=path, data=data, **kwargs)
                 except TypeError as e:
                     return response(MISSING_DATA, data=str(e))
+                # TODO put try/except around the whole case analysis!
                 except Exception as e:
                     return response(INTERNAL_SERVER_ERROR)
                 data_response = dst
@@ -226,9 +230,12 @@ def handle_request(msg):
         elif cmd == CMD_REQUIRE_DATASET:
             # TODO raises error => https://github.com/meteotest/hurray/issues/5
 
+            avail_kwargs = [CMD_KW_SHAPE, CMD_KW_DTYPE, CMD_KW_CHUNKS,
+                            CMD_KW_COMPRESSION, CMD_KW_COMPRESSION_OPTS,
+                            CMD_KW_FILLVALUE, CMD_KW_REQUIRE_EXACT]
+            kwargs = {kw: args[kw] for kw in avail_kwargs if kw in args}
             try:
-                dst = db.require_dataset(name=path, data=data,
-                                         **kwargs)
+                dst = db.require_dataset(name=path, data=data, **kwargs)
             except TypeError:
                 return response(INCOMPATIBLE_DATA)
             data_response = dst
