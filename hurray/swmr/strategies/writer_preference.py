@@ -70,16 +70,12 @@ def start_write(name):
         locks['wcnt'] += 1
         if locks['wcnt'] == 1:
             locks['r'].acquire()
-        print("### start_write before acquire(): ", locks["w"])
         locks['w'].acquire()
-        print("### start_write after acquire(): ", locks["w"])
 
 
 def end_write(name):
     locks = _get_locks(name)
-    print("###### end_write before release", locks["w"])
     locks['w'].release()
-    print("###### end_write after release", locks["w"])
     with locks['mutex2']:
         locks['wcnt'] -= 1
         if locks['wcnt'] == 0:

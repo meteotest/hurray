@@ -134,6 +134,9 @@ class Group(Node):
 
     @writer
     def create_group(self, name):
+        """
+        Wrapper around ``h5py.Group.create_group()``
+        """
         with h5py.File(self.file, 'r+') as f:
             group = f[self.path]
             created_group = group.create_group(name)
@@ -143,6 +146,9 @@ class Group(Node):
 
     @writer
     def require_group(self, name):
+        """
+        Wrapper around ``h5py.Group.require_group()``
+        """
         with h5py.File(self.file, 'r+') as f:
             group = f[self.path]
             created_group = group.require_group(name)
@@ -152,6 +158,9 @@ class Group(Node):
 
     @writer
     def create_dataset(self, **kwargs):
+        """
+        Wrapper around ``h5py.Group.create_dataset()``
+        """
         overwrite = kwargs.get('overwrite', False)
         name = kwargs['name']
         # remove additional arguments because they are not supported by h5py
@@ -170,6 +179,9 @@ class Group(Node):
 
     @writer
     def require_dataset(self, **kwargs):
+        """
+        Wrapper around ``h5py.Group.require_dataset()``
+        """
         with h5py.File(self.file, 'r+') as f:
             group = f[self.path]
             dst = group.require_dataset(**kwargs)
@@ -293,7 +305,6 @@ class File(Group):
 
             @writer
             def init(self):
-                print("------- calling File.__init__({})".format(name))
                 with h5py.File(name=name, mode=mode, *args, **kwargs):
                     pass
 

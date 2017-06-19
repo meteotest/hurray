@@ -48,7 +48,7 @@ if setuptools is not None:
     install_requires = [
         'numpy==1.12.0',
         'msgpack-python==0.4.8',
-        'h5py==2.6'
+        'h5py==2.7.0'
     ]
     extras_require = {
         "dev": [

@@ -40,6 +40,7 @@ from hurray.protocol import (CMD_CREATE_DATABASE, CMD_RENAME_DATABASE,
                              CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB,
                              CMD_KW_DB_RENAMETO, CMD_KW_OVERWRITE, CMD_KW_PATH,
                              CMD_KW_DATA, CMD_KW_KEY, CMD_KW_STATUS,
+                             CMD_KW_SHAPE, CMD_KW_DTYPE,
                              RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS,
                              RESPONSE_NODE_KEYS, RESPONSE_NODE_TREE)
 from hurray.server.log import app_log
@@ -49,7 +50,7 @@ from hurray.status_codes import (FILE_EXISTS, OK, FILE_NOT_FOUND, GROUP_EXISTS,
                                  TYPE_ERROR, CREATED, UNKNOWN_COMMAND,
                                  MISSING_ARGUMENT, MISSING_DATA,
                                  INCOMPATIBLE_DATA, KEY_ERROR,
-                                 INVALID_ARGUMENT)
+                                 INVALID_ARGUMENT, INTERNAL_SERVER_ERROR)
 from .swmr import File, Group, Dataset
 
 DATABASE_COMMANDS = (
@@ -108,7 +109,7 @@ def response(status, data=None):
     """
     Args:
         status: status code of response
-        data: TODO
+        data: NumPy array or Python object
     """
     resp = {
         CMD_KW_STATUS: status
@@ -130,12 +131,14 @@ def handle_request(msg):
     """
     cmd = msg.get(CMD_KW_CMD, None)
     args = msg.get(CMD_KW_ARGS, {})
+    data = msg.get(CMD_KW_DATA, None)
 
     app_log.debug('Process "%s" (%s)', cmd,
                   ', '.join(['%s=%s' % (k, v) for k, v in args.items()]))
 
+    # return values
     status = OK
-    data = None
+    data_response = None
 
     if cmd in DATABASE_COMMANDS:  # file related commands
         # Database name has to be defined
@@ -164,7 +167,9 @@ def handle_request(msg):
                 f = File(db_path(db), "w")
                 filepath_new = db_path(args[CMD_KW_DB_RENAMETO])
                 f.rename(filepath_new)
-                data = f
+                # we cannot return f because rename() is not "in place"
+                f_renamed = File(filepath_new)
+                data_response = f_renamed
         elif cmd == CMD_DELETE_DATABASE:
             if not db_exists(db):
                 status = FILE_NOT_FOUND
@@ -175,7 +180,7 @@ def handle_request(msg):
             if not db_exists(db):
                 status = FILE_NOT_FOUND
         elif cmd == CMD_GET_FILESIZE:
-            data = File(db_path(db), "r").filesize
+            data_response = File(db_path(db), "r").filesize
 
     elif cmd in NODE_COMMANDS:  # Node related commands
         # Database name and path have to be defined
@@ -203,27 +208,30 @@ def handle_request(msg):
             db.require_group(path)
 
         elif cmd == CMD_CREATE_DATASET:
-            # TODO handle optional arguments
             if path in db:
                 status = DATASET_EXISTS
             else:
-                # TODO "data" should not be a mandatory parameter
-                if CMD_KW_DATA not in msg:
-                    return response(MISSING_DATA)
-                dst = db.create_dataset(name=path, data=msg[CMD_KW_DATA])
-                data = dst
+                # shape=None, dtype=None, data=None
+                shape = args.get(CMD_KW_SHAPE, None)
+                dtype = args.get(CMD_KW_DTYPE, None)
+                try:
+                    dst = db.create_dataset(name=path, data=data, shape=shape,
+                                            dtype=dtype)
+                except TypeError as e:
+                    return response(MISSING_DATA, data=str(e))
+                except Exception as e:
+                    return response(INTERNAL_SERVER_ERROR)
+                data_response = dst
 
         elif cmd == CMD_REQUIRE_DATASET:
-            kwargs = msg[CMD_KW_ARGS]
-
             # TODO raises error => https://github.com/meteotest/hurray/issues/5
 
             try:
-                dst = db.require_dataset(name=path, data=msg[CMD_KW_DATA],
+                dst = db.require_dataset(name=path, data=data,
                                          **kwargs)
             except TypeError:
                 return response(INCOMPATIBLE_DATA)
-            data = dst
+            data_response = dst
 
         else:  # Commands for existing nodes
             if path not in db:
@@ -231,11 +239,11 @@ def handle_request(msg):
 
             if cmd == CMD_GET_NODE:
                 # let the msgpack encoder handle encoding of Groups/Datasets
-                data = db[path]
+                data_response = db[path]
             elif cmd == CMD_GET_KEYS:
                 node = db[path]
                 if isinstance(node, Group):
-                    data = {
+                    data_response = {
                         # without list() it does not work with py3 (returns a
                         # view on a closed hdf5 file)
                         RESPONSE_NODE_KEYS: list(node.keys())
@@ -246,7 +254,7 @@ def handle_request(msg):
                 node = db[path]
                 if isinstance(node, Group):
                     tree = node.tree()
-                    data = {
+                    data_response = {
                         RESPONSE_NODE_TREE: tree
                     }
                 elif isinstance(node, Dataset):
@@ -255,18 +263,18 @@ def handle_request(msg):
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
                 try:
-                    data = db[path][args[CMD_KW_KEY]]
+                    data_response = db[path][args[CMD_KW_KEY]]
                 except ValueError as ve:
                     status = VALUE_ERROR
                     app_log.debug('Invalid slice: %s', ve)
 
             elif cmd == CMD_BROADCAST_DATASET:
-                if CMD_KW_DATA not in msg:
+                if data is None:
                     return response(MISSING_DATA)
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
                 try:
-                    db[path][args[CMD_KW_KEY]] = msg[CMD_KW_DATA]
+                    db[path][args[CMD_KW_KEY]] = data
                 except ValueError as ve:
                     status = VALUE_ERROR
                     app_log.debug('Invalid slice: %s', ve)
@@ -280,15 +288,15 @@ def handle_request(msg):
                 key = args[CMD_KW_KEY]
                 if len(key) < 1:
                     return response(INVALID_ARGUMENT)
-                if CMD_KW_DATA in msg:
-                    db[path].attrs[key] = msg[CMD_KW_DATA]
+                if data is not None:
+                    db[path].attrs[key] = data
                 else:
                     return response(MISSING_DATA)
             elif cmd == CMD_ATTRIBUTES_GET:
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
                 try:
-                    data = db[path].attrs[args[CMD_KW_KEY]]
+                    data_response = db[path].attrs[args[CMD_KW_KEY]]
                 except KeyError as ke:
                     status = KEY_ERROR
                     app_log.debug('Invalid key: %s', ke)
@@ -296,14 +304,14 @@ def handle_request(msg):
             elif cmd == CMD_ATTRIBUTES_CONTAINS:
                 if CMD_KW_KEY not in args:
                     return response(MISSING_ARGUMENT)
-                data = {
+                data_response = {
                     RESPONSE_ATTRS_CONTAINS: args[CMD_KW_KEY] in db[path].attrs
                 }
             elif cmd == CMD_ATTRIBUTES_KEYS:
-                data = {
+                data_response = {
                     RESPONSE_ATTRS_KEYS: db[path].attrs.keys()
                 }
     else:
         status = UNKNOWN_COMMAND
 
-    return response(status, data)
+    return response(status, data_response)
