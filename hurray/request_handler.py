@@ -29,8 +29,8 @@ import msgpack
 
 from hurray.msgpack_ext import encode as encode_msgpack
 from hurray.protocol import (CMD_CREATE_DATABASE, CMD_RENAME_DATABASE,
-                             CMD_DELETE_DATABASE,
-                             CMD_USE_DATABASE, CMD_CREATE_GROUP,
+                             CMD_DELETE_DATABASE, CMD_USE_DATABASE,
+                             CMD_LIST_DATABASES, CMD_CREATE_GROUP,
                              CMD_REQUIRE_GROUP, CMD_CREATE_DATASET,
                              CMD_REQUIRE_DATASET, CMD_GET_FILESIZE,
                              CMD_GET_NODE, CMD_GET_KEYS, CMD_GET_TREE,
@@ -40,8 +40,7 @@ from hurray.protocol import (CMD_CREATE_DATABASE, CMD_RENAME_DATABASE,
                              CMD_KW_CMD, CMD_KW_ARGS, CMD_KW_DB,
                              CMD_KW_DB_RENAMETO, CMD_KW_OVERWRITE, CMD_KW_PATH,
                              CMD_KW_DATA, CMD_KW_KEY, CMD_KW_STATUS,
-                             CMD_KW_SHAPE, CMD_KW_DTYPE,
-                             CMD_KW_REQUIRE_EXACT,
+                             CMD_KW_SHAPE, CMD_KW_DTYPE, CMD_KW_REQUIRE_EXACT,
                              CMD_KW_CHUNKS, CMD_KW_FILLVALUE,
                              CMD_KW_COMPRESSION, CMD_KW_COMPRESSION_OPTS,
                              RESPONSE_ATTRS_CONTAINS, RESPONSE_ATTRS_KEYS,
@@ -61,6 +60,7 @@ DATABASE_COMMANDS = (
     CMD_RENAME_DATABASE,
     CMD_DELETE_DATABASE,
     CMD_USE_DATABASE,
+    CMD_LIST_DATABASES,
     CMD_GET_FILESIZE,
 )
 
@@ -144,13 +144,14 @@ def handle_request(msg):
     data_response = None
 
     if cmd in DATABASE_COMMANDS:  # file related commands
-        # Database name has to be defined
-        if CMD_KW_DB not in args:
-            return response(MISSING_ARGUMENT)
-        db = args[CMD_KW_DB]
-        if len(db) < 1:
+
+        db = args.get(CMD_KW_DB, None)
+        if db is not None and len(db) < 1:
             return response(INVALID_ARGUMENT)
+
         if cmd == CMD_CREATE_DATABASE:
+            if db is None:
+                return response(MISSING_ARGUMENT)
             overwrite = args[CMD_KW_OVERWRITE]
             if db_exists(db) and not overwrite:
                 status = FILE_EXISTS
@@ -164,26 +165,50 @@ def handle_request(msg):
                 File(filepath, flags)
                 status = CREATED
         elif cmd == CMD_RENAME_DATABASE:
+            if db is None:
+                return response(MISSING_ARGUMENT)
             if not db_exists(db):
                 status = FILE_NOT_FOUND
             else:
                 f = File(db_path(db), "r")
                 filepath_new = db_path(args[CMD_KW_DB_RENAMETO])
-                f.rename(filepath_new)
-                # we cannot return f because rename() is not "in place"
-                f_renamed = File(filepath_new, "r")
-                data_response = f_renamed
+                try:
+                    f.rename(filepath_new)
+                except FileExistsError as e:
+                    status = FILE_EXISTS
+                else:
+                    # we cannot return f because rename() is not "in place"
+                    f_renamed = File(filepath_new, "r")
+                    data_response = f_renamed
         elif cmd == CMD_DELETE_DATABASE:
+            if db is None:
+                return response(MISSING_ARGUMENT)
             if not db_exists(db):
                 status = FILE_NOT_FOUND
             else:
                 f = File(db_path(db), "w")
                 f.delete()
         elif cmd == CMD_USE_DATABASE:
+            if db is None:
+                return response(MISSING_ARGUMENT)
             if not db_exists(db):
                 status = FILE_NOT_FOUND
         elif cmd == CMD_GET_FILESIZE:
+            if db is None:
+                return response(MISSING_ARGUMENT)
             data_response = File(db_path(db), "r").filesize
+        elif cmd == CMD_LIST_DATABASES:
+            abspath = db_path(args[CMD_KW_PATH])
+            # TODO check if a file is actually an hdf5 file by calling File()?
+            result = {}
+            for f in os.listdir(abspath):
+                f_path = os.path.join(abspath, f)
+                if not os.path.isfile(f_path):
+                    continue
+                stat = os.stat(f_path)
+                filesize = stat.st_size
+                result[f] = {"filesize": filesize}
+            data_response = result
 
     elif cmd in NODE_COMMANDS:  # Node related commands
         # Database name and path have to be defined

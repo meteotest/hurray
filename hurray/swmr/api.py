@@ -341,7 +341,12 @@ class File(Group):
 
         Args:
             new: new filename
+
+        Raises:
+            FileExistsError if file ``new`` already exists
         """
+        if os.path.isfile(new):
+            raise FileExistsError("file {} exists".format(new))
         os.rename(self.file, new)
 
     @writer
