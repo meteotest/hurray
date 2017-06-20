@@ -57,7 +57,7 @@ define("host", default='localhost', group='application',
 define("port", default=2222, group='application',
        help="TCP port to listen on (0 = do not listen on a port)")
 define("socket", default=None, group='application',
-       help="Unix socket path")
+       help="Unix domain socket path")
 define("processes", default=0, group='application',
        help="Number of sub-processes (0 = detect the number of cores available"
             " on this machine)")
@@ -180,8 +180,9 @@ def main():
         app_log.info("Listening on %s:%d", options.host, options.port)
 
     if options.socket:
-        app_log.info("Listening on %s", options.socket)
-        sockets.append(bind_unix_socket(options.socket))
+        socket_file = os.path.abspath(os.path.expanduser(options.socket))
+        app_log.info("Listening on {}".format(socket_file))
+        sockets.append(bind_unix_socket(socket_file))
 
     if len(sockets) < 1:
         app_log.error('Define a socket and/or a port > 0')
