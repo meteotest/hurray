@@ -275,7 +275,9 @@ def handle_request(msg):
                 # let the msgpack encoder handle encoding of Groups/Datasets
                 data_response = db[path]
             elif cmd == CMD_CONTAINS:
-                data_response = path in db
+                if CMD_KW_KEY not in args:
+                    return response(MISSING_ARGUMENT)
+                data_response = args[CMD_KW_KEY] in db
             elif cmd == CMD_GET_KEYS:
                 node = db[path]
                 if isinstance(node, Group):
