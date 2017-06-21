@@ -33,7 +33,8 @@ from hurray.protocol import (CMD_CREATE_DATABASE, CMD_RENAME_DATABASE,
                              CMD_LIST_DATABASES, CMD_CREATE_GROUP,
                              CMD_REQUIRE_GROUP, CMD_CREATE_DATASET,
                              CMD_REQUIRE_DATASET, CMD_GET_FILESIZE,
-                             CMD_GET_NODE, CMD_GET_KEYS, CMD_GET_TREE,
+                             CMD_GET_NODE, CMD_CONTAINS, CMD_GET_KEYS,
+                             CMD_GET_TREE,
                              CMD_SLICE_DATASET, CMD_BROADCAST_DATASET,
                              CMD_ATTRIBUTES_GET, CMD_ATTRIBUTES_SET,
                              CMD_ATTRIBUTES_CONTAINS, CMD_ATTRIBUTES_KEYS,
@@ -69,6 +70,7 @@ NODE_COMMANDS = (CMD_CREATE_GROUP,
                  CMD_CREATE_DATASET,
                  CMD_REQUIRE_DATASET,
                  CMD_GET_NODE,
+                 CMD_CONTAINS,
                  CMD_GET_KEYS,
                  CMD_GET_TREE,
                  CMD_SLICE_DATASET,
@@ -272,6 +274,8 @@ def handle_request(msg):
             if cmd == CMD_GET_NODE:
                 # let the msgpack encoder handle encoding of Groups/Datasets
                 data_response = db[path]
+            elif cmd == CMD_CONTAINS:
+                data_response = path in db
             elif cmd == CMD_GET_KEYS:
                 node = db[path]
                 if isinstance(node, Group):
